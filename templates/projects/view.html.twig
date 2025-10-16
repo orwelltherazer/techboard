@@ -4,32 +4,32 @@
 {% block title %}TechBoard - {{ project.name }}{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
+<div class="d-flex justify-content-between align-items-center mb-3">
     <h2>{{ project.name }}</h2>
     <div>
-        <a href="projects.php?action=edit&id={{ project.id }}" class="btn btn-outline-primary">
-            <i class="fas fa-edit"></i> Modifier le projet
+        <a href="projects.php?action=edit&id={{ project.id }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Modifier
         </a>
-        <a href="projects.php" class="btn btn-outline-secondary">← Retour à la liste</a>
+        <a href="projects.php" class="btn btn-outline-secondary btn-sm">← Retour</a>
     </div>
 </div>
 
 {# Informations du projet #}
-<div class="card mb-4">
-    <div class="card-body">
-        <div class="row g-4">
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="row g-3">
             <div class="col-md-12">
-                <h5 class="text-muted mb-2">Objectif</h5>
-                <p>{{ project.objective ?: '—' }}</p>
+                <div class="fw-bold text-muted small mb-1">Objectif</div>
+                <p class="mb-0">{{ project.objective ?: '—' }}</p>
             </div>
             
             <div class="col-md-12">
-                <h5 class="text-muted mb-2">Contexte / Justification</h5>
-                <p>{{ project.context ?: '—' }}</p>
+                <div class="fw-bold text-muted small mb-1">Contexte / Justification</div>
+                <p class="mb-0">{{ project.context ?: '—' }}</p>
             </div>
             
             <div class="col-md-3">
-                <h6 class="text-muted mb-2">Avancement</h6>
+                <div class="fw-bold text-muted small mb-1">Avancement</div>
                 <div class="progress mb-2" style="height: 20px;">
                     <div class="progress-bar
                         {% if project.progress_percent < 30 %}bg-danger
@@ -43,8 +43,8 @@
             </div>
             
             <div class="col-md-3">
-                <h6 class="text-muted mb-2">Responsable</h6>
-                <p>{{ project.manager_name ?: 'Non assigné' }}
+                <div class="fw-bold text-muted small mb-1">Responsable</div>
+                <p class="mb-0">{{ project.manager_name ?: 'Non assigné' }}
                     {% if project.manager_company %}
                         <br><small class="text-muted">{{ project.manager_company }}</small>
                     {% endif %}
@@ -52,13 +52,13 @@
             </div>
             
             <div class="col-md-3">
-                <h6 class="text-muted mb-2">Date de début</h6>
-                <p>{{ project.start_date ? project.start_date|date('d/m/Y') : '—' }}</p>
+                <div class="fw-bold text-muted small mb-1">Date de début</div>
+                <p class="mb-0">{{ project.start_date ? project.start_date|date('d/m/Y') : '—' }}</p>
             </div>
             
             <div class="col-md-3">
-                <h6 class="text-muted mb-2">Date de fin estimée</h6>
-                <p>{{ project.estimated_end_date ? project.estimated_end_date|date('d/m/Y') : '—' }}
+                <div class="fw-bold text-muted small mb-1">Date de fin estimée</div>
+                <p class="mb-0">{{ project.estimated_end_date ? project.estimated_end_date|date('d/m/Y') : '—' }}
                     {% if project.estimated_end_date and project.estimated_end_date < 'now'|date('Y-m-d') and project.progress_percent < 100 %}
                         <i class="fas fa-exclamation-circle text-danger ms-1" title="En retard"></i>
                     {% endif %}
@@ -67,8 +67,8 @@
             
             {% if project.internal_notes %}
             <div class="col-md-12">
-                <h6 class="text-muted mb-2">Notes internes</h6>
-                <p style="white-space: pre-line;">{{ project.internal_notes }}</p>
+                <div class="fw-bold text-muted small mb-1">Notes internes</div>
+                <p class="mb-0" style="white-space: pre-line;">{{ project.internal_notes }}</p>
             </div>
             {% endif %}
         </div>
@@ -77,29 +77,22 @@
 
 {# Historique des étapes #}
 <div class="card">
-    <div class="card-header d-flex justify-content-between align-items-center">
-        <h5 class="mb-0">Historique des étapes</h5>
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h6 class="mb-0 fw-bold">Historique des étapes</h6>
         <button type="button" class="btn btn-sm btn-primary" onclick="openAddModal()">
-            <i class="fas fa-plus"></i> Ajouter une étape
+            <i class="fas fa-plus"></i> Ajouter
         </button>
     </div>
-    <div class="card-body">
+    <div class="card-body p-0">
         {% if logs %}
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th style="width: 180px;">Date</th>
-                        <th>Note</th>
-                        <th style="width: 100px;" class="text-center">Actions</th>
-                    </tr>
-                </thead>
+            <table class="table table-hover align-middle mb-0 table-sm">
                 <tbody id="logs-table">
                     {% for log in logs %}
                     <tr data-log-id="{{ log.id }}">
-                        <td>{{ log.log_date|date('d/m/Y H:i') }}</td>
-                        <td style="white-space: pre-line;">{{ log.content }}</td>
-                        <td class="text-center">
+                        <td class="py-2">{{ log.log_date|date('d/m/Y') }}</td>
+                        <td class="py-2" style="white-space: pre-line;">{{ log.content }}</td>
+                        <td class="text-center py-2">
                             <button class="btn btn-sm btn-outline-primary border-0 edit-log-btn" 
                                     data-log-id="{{ log.id }}"
                                     title="Modifier">
@@ -117,7 +110,7 @@
             </table>
         </div>
         {% else %}
-        <div class="alert alert-info mb-0">
+        <div class="alert alert-info mb-0 m-3">
             Aucune étape enregistrée pour le moment.
         </div>
         {% endif %}
@@ -135,12 +128,12 @@
             <div class="modal-body">
                 <form id="addLogForm">
                     <div class="mb-3">
-                        <label for="add_log_date" class="form-label">Date *</label>
+                        <label for="add_log_date" class="form-label fw-bold small">Date *</label>
                         <input type="datetime-local" class="form-control" id="add_log_date" name="log_date" 
                                value="{{ 'now'|date('Y-m-d\\TH:i') }}" required>
                     </div>
                     <div class="mb-3">
-                        <label for="add_log_content" class="form-label">Note *</label>
+                        <label for="add_log_content" class="form-label fw-bold small">Note *</label>
                         <textarea class="form-control" id="add_log_content" name="content" rows="4" required></textarea>
                     </div>
                 </form>
@@ -165,11 +158,11 @@
                 <form id="editLogForm">
                     <input type="hidden" id="edit_log_id" name="log_id">
                     <div class="mb-3">
-                        <label for="edit_log_date" class="form-label">Date *</label>
+                        <label for="edit_log_date" class="form-label fw-bold small">Date *</label>
                         <input type="datetime-local" class="form-control" id="edit_log_date" name="log_date" required>
                     </div>
                     <div class="mb-3">
-                        <label for="edit_log_content" class="form-label">Note *</label>
+                        <label for="edit_log_content" class="form-label fw-bold small">Note *</label>
                         <textarea class="form-control" id="edit_log_content" name="content" rows="4" required></textarea>
                     </div>
                 </form>
