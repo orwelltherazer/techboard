@@ -1,0 +1,91 @@
+{# templates/processes/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouveau' }} processus{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ is_edit ? 'Modifier le processus' : 'Nouveau processus' }}</h2>
+    <a href="processes.php" class="btn btn-outline-secondary">← Retour</a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label for="name" class="form-label fw-bold">Nom du processus *</label>
+        <input type="text" class="form-control" id="name" name="name" value="{{ process.name ?? '' }}" required>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="domain" class="form-label fw-bold">Domaine concerné</label>
+        <select class="form-select" id="domain" name="domain">
+            <option value="it" {% if (process.domain ?? 'it') == 'it' %}selected{% endif %}>Informatique</option>
+            <option value="maintenance" {% if (process.domain ?? '') == 'maintenance' %}selected{% endif %}>Maintenance</option>
+            <option value="security" {% if (process.domain ?? '') == 'security' %}selected{% endif %}>Sécurité</option>
+            <option value="network" {% if (process.domain ?? '') == 'network' %}selected{% endif %}>Réseau</option>
+            <option value="communication" {% if (process.domain ?? '') == 'communication' %}selected{% endif %}>Communication</option>
+            <option value="other" {% if (process.domain ?? 'other') == 'other' %}selected{% endif %}>Autre</option>
+        </select>
+    </div>
+    
+    <div class="col-md-12">
+        <label for="steps" class="form-label fw-bold">Étapes détaillées *</label>
+        <textarea class="form-control" id="steps" name="steps" rows="6" required>{{ process.steps ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="prerequisites" class="form-label fw-bold">Pré-requis</label>
+        <textarea class="form-control" id="prerequisites" name="prerequisites" rows="2">{{ process.prerequisites ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="risks" class="form-label fw-bold">Risques</label>
+        <textarea class="form-control" id="risks" name="risks" rows="2">{{ process.risks ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="checkpoints" class="form-label fw-bold">Points de contrôle</label>
+        <textarea class="form-control" id="checkpoints" name="checkpoints" rows="2">{{ process.checkpoints ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="documentation_url" class="form-label fw-bold">Documentation jointe</label>
+        <input type="url" class="form-control" id="documentation_url" name="documentation_url" value="{{ process.documentation_url ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="validation_date" class="form-label fw-bold">Date de validation</label>
+        <input type="date" class="form-control" id="validation_date" name="validation_date" value="{{ process.validation_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="author_id" class="form-label fw-bold">Responsable / Auteur</label>
+        <select class="form-select" id="author_id" name="author_id">
+            <option value="">Non assigné</option>
+            {% for contact in contacts %}
+            <option value="{{ contact.id }}" {% if contact.id == (process.author_id ?? null) %}selected{% endif %}>
+                {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {% if is_edit %}
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="archived" name="archived" {% if process.archived ?? false %}checked{% endif %}>
+            <label class="form-check-label" for="archived">
+                Archiver ce processus (il disparaîtra de la liste principale)
+            </label>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">{{ is_edit ? 'Mettre à jour' : 'Créer le processus' }}</button>
+    </div>
+</form>
+{% endblock %}

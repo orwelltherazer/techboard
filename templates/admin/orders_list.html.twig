@@ -1,0 +1,124 @@
+{# templates/admin/orders_list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Commandes{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Commandes / Devis</h2>
+    <a href="administration.php?action=order_add" class="btn btn-primary">Nouvelle commande</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="quoted">Devis</option>
+            <option value="ordered">Commandé</option>
+            <option value="delivered">Livrée</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-orders" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Référence</th>
+                <th scope="col">Description</th>
+                <th scope="col">Fournisseur</th>
+                <th scope="col">Montant</th>
+                <th scope="col">Date commande</th>
+                <th scope="col">Statut</th>
+                <th scope="col">Projet</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody id="orders-table-body">
+            {% for order in orders %}
+            <tr class="order-row" 
+                data-status="{{ order.status }}" 
+                data-reference="{{ order.reference|lower }}"
+                data-vendor="{{ order.vendor_name|lower|default('') }}"
+                data-id="order-{{ order.id }}">
+                <td><strong>{{ order.reference }}</strong></td>
+                <td>{{ order.description|default('—') }}</td>
+                <td>{{ order.vendor_name }}</td>
+                <td>{{ order.amount ? order.amount|number_format(2, ',', ' ') ~ ' €' : '—' }}</td>
+                <td>{{ order.order_date ? order.order_date|date('d/m/Y') : '—' }}</td>
+                <td>
+                    <span class="badge 
+                        {% if order.status == 'quoted' %}bg-secondary text-light
+                        {% elseif order.status == 'ordered' %}bg-primary text-light
+                        {% elseif order.status == 'delivered' %}bg-success text-light
+                        {% endif %}">
+                        {% if order.status == 'quoted' %}Devis
+                        {% elseif order.status == 'ordered' %}Commandé
+                        {% elseif order.status == 'delivered' %}Livré
+                        {% endif %}
+                    </span>
+                </td>
+                <td>{{ order.project_name|default('—') }}</td>
+                <td class="text-center">
+                    <a href="administration.php?action=order_edit&id={{ order.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="8" class="text-center text-muted">Aucune commande trouvée</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('filter-status');
+    const searchInput = document.getElementById('search-orders');
+    const orderRows = document.querySelectorAll('.order-row');
+    
+    function filterOrders() {
+        const statusValue = statusFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        
+        orderRows.forEach(row => {
+            const statusMatch = !statusValue || row.dataset.status === statusValue;
+            const searchMatch = !searchValue || 
+                row.dataset.reference.includes(searchValue) || 
+                row.dataset.vendor.includes(searchValue);
+            
+            row.style.display = (statusMatch && searchMatch) ? '' : 'none';
+        });
+    }
+    
+    statusFilter.addEventListener('change', filterOrders);
+    searchInput.addEventListener('input', filterOrders);
+});
+</script>
+{% endblock %}

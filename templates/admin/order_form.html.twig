@@ -1,0 +1,85 @@
+{# templates/admin/order_form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouvelle' }} commande{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ is_edit ? 'Modifier la commande' : 'Nouvelle commande' }}</h2>
+    <a href="administration.php?section=orders" class="btn btn-outline-secondary">← Retour</a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label for="reference" class="form-label fw-bold">Référence *</label>
+        <input type="text" class="form-control" id="reference" name="reference" value="{{ order.reference ?? '' }}" required>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="vendor_id" class="form-label fw-bold">Fournisseur *</label>
+        <select class="form-select" id="vendor_id" name="vendor_id" required>
+            <option value="">Sélectionnez un fournisseur</option>
+            {% for contact in contacts %}
+            <option value="{{ contact.id }}" {% if contact.id == (order.vendor_id ?? null) %}selected{% endif %}>
+                {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="col-md-12">
+        <label for="description" class="form-label fw-bold">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="2">{{ order.description ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="amount" class="form-label fw-bold">Montant (€)</label>
+        <input type="number" class="form-control" id="amount" name="amount" step="0.01" value="{{ order.amount ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="order_date" class="form-label fw-bold">Date de commande</label>
+        <input type="date" class="form-control" id="order_date" name="order_date" value="{{ order.order_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="status" class="form-label fw-bold">Statut</label>
+        <select class="form-select" id="status" name="status">
+            <option value="quoted" {% if (order.status ?? 'quoted') == 'quoted' %}selected{% endif %}>Devis</option>
+            <option value="ordered" {% if (order.status ?? 'ordered') == 'ordered' %}selected{% endif %}>Commandé</option>
+            <option value="delivered" {% if (order.status ?? '') == 'delivered' %}selected{% endif %}>Livré</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="related_project_id" class="form-label fw-bold">Projet associé</label>
+        <select class="form-select" id="related_project_id" name="related_project_id">
+            <option value="">Aucun projet</option>
+            {% for project in projects %}
+            <option value="{{ project.id }}" {% if project.id == (order.related_project_id ?? null) %}selected{% endif %}>
+                {{ project.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {% if is_edit %}
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="archived" name="archived" {% if order.archived ?? false %}checked{% endif %}>
+            <label class="form-check-label" for="archived">
+                Archiver cette commande (elle disparaîtra de la liste principale)
+            </label>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="col-12">
+        <button type="submit" class="btn btn-primary">{{ is_edit ? 'Mettre à jour' : 'Créer la commande' }}</button>
+    </div>
+</form>
+{% endblock %}

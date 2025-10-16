@@ -1,0 +1,257 @@
+{# templates/processes/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Processus{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Processus Critiques</h2>
+    <a href="processes.php?action=add" class="btn btn-primary">Nouveau processus</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-domain">
+            <option value="">Tous les domaines</option>
+            <option value="it">Informatique</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="security">Sécurité</option>
+            <option value="network">Réseau</option>
+            <option value="communication">Communication</option>
+            <option value="other">Autre</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-processes" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Domaine</th>
+                <th scope="col">Auteur</th>
+                <th scope="col">Validé le</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody id="processes-table-body">
+            {% for process in processes %}
+            <tr class="process-row" 
+                data-domain="{{ process.domain }}" 
+                data-name="{{ process.name|lower }}"
+                data-author="{{ process.author_name|lower|default('') }}">
+                <td>
+                    <a href="#" class="process-link" 
+                       data-name="{{ process.name|e }}"
+                       data-domain="{{ process.domain|default('—') }}"
+                       data-steps="{{ process.steps|e }}"
+                       data-prerequisites="{{ process.prerequisites|default('')|e }}"
+                       data-risks="{{ process.risks|default('')|e }}"
+                       data-checkpoints="{{ process.checkpoints|default('')|e }}"
+                       data-doc-url="{{ process.documentation_url|default('') }}"
+                       data-validation-date="{{ process.validation_date ? process.validation_date|date('d/m/Y') : '—' }}"
+                       data-author="{{ process.author_name|default('—') }}">
+                        <strong>{{ process.name }}</strong>
+                    </a>
+                </td>
+                <td>
+                    {% if process.domain == 'it' %}Informatique
+                    {% elseif process.domain == 'maintenance' %}Maintenance
+                    {% elseif process.domain == 'security' %}Sécurité
+                    {% elseif process.domain == 'network' %}Réseau
+                    {% elseif process.domain == 'communication' %}Communication
+                    {% else %}Autre{% endif %}
+                </td>
+                <td>{{ process.author_name|default('—') }}</td>
+                <td>{{ process.validation_date ? process.validation_date|date('d/m/Y') : '—' }}</td>
+                <td text-center>
+                    <a href="processes.php?action=edit&id={{ process.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucun processus trouvé</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="processModal" tabindex="-1" aria-labelledby="processModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="processModalLabel">
+                    <i class="fas fa-clipboard-list me-2"></i>Détail du processus
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="container-fluid">
+                    <h4 id="modal-process-name" class="text-primary mb-4"></h4>
+                    
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <div class="card border-0 bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title text-muted"><i class="fas fa-list-ol me-1"></i>Étapes détaillées</h6>
+                                    <div class="card-text text-dark" id="modal-process-steps" style="white-space: pre-line;">—</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0">
+                                <div class="card-body bg-warning-subtle">
+                                    <h6 class="card-title text-warning"><i class="fas fa-exclamation-triangle me-1"></i>Risques</h6>
+                                    <div class="card-text text-dark" id="modal-process-risks" style="white-space: pre-line;">—</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0">
+                                <div class="card-body bg-info-subtle">
+                                    <h6 class="card-title text-info"><i class="fas fa-check-circle me-1"></i>Points de contrôle</h6>
+                                    <div class="card-text text-dark" id="modal-process-checkpoints" style="white-space: pre-line;">—</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0">
+                                <div class="card-body bg-success-subtle">
+                                    <h6 class="card-title text-success"><i class="fas fa-clipboard-check me-1"></i>Pré-requis</h6>
+                                    <div class="card-text text-dark" id="modal-process-prerequisites" style="white-space: pre-line;">—</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100 border-0">
+                                <div class="card-body bg-secondary-subtle">
+                                    <h6 class="card-title text-secondary"><i class="fas fa-book me-1"></i>Documentation</h6>
+                                    <div class="card-text">
+                                        <a href="" id="modal-process-doc-url" target="_blank" class="text-decoration-none text-primary" style="display: none;">
+                                            <i class="fas fa-external-link-alt me-1"></i>Accéder à la documentation
+                                        </a>
+                                        <span id="modal-process-no-doc" class="text-muted">Aucune documentation disponible</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-start">
+                                <strong>Auteur :</strong> <span id="modal-process-author">—</span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="text-end">
+                                <strong>Date de validation :</strong> <span id="modal-process-validation-date">—</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const domainFilter = document.getElementById('filter-domain');
+    const searchInput = document.getElementById('search-processes');
+    const processRows = document.querySelectorAll('.process-row');
+    
+    // Gestion du modal
+    document.querySelectorAll('.process-link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Mettre à jour les données
+            document.getElementById('modal-process-name').textContent = this.dataset.name || '—';
+            document.getElementById('modal-process-author').textContent = this.dataset.author || '—';
+            document.getElementById('modal-process-validation-date').textContent = this.dataset.validationDate || '—';
+            
+            // Étapes détaillées avec retours à la ligne (utilise white-space: pre-line)
+            document.getElementById('modal-process-steps').textContent = this.dataset.steps || '—';
+            
+            // Pré-requis
+            document.getElementById('modal-process-prerequisites').textContent = this.dataset.prerequisites || '—';
+            
+            // Risques
+            document.getElementById('modal-process-risks').textContent = this.dataset.risks || '—';
+            
+            // Points de contrôle
+            document.getElementById('modal-process-checkpoints').textContent = this.dataset.checkpoints || '—';
+            
+            // Documentation
+            if (this.dataset.docUrl) {
+                document.getElementById('modal-process-doc-url').href = this.dataset.docUrl;
+                document.getElementById('modal-process-doc-url').style.display = 'inline';
+                document.getElementById('modal-process-no-doc').style.display = 'none';
+            } else {
+                document.getElementById('modal-process-doc-url').style.display = 'none';
+                document.getElementById('modal-process-no-doc').style.display = 'inline';
+            }
+            
+            // Ouvrir le modal
+            const modal = new bootstrap.Modal(document.getElementById('processModal'));
+            modal.show();
+        });
+    });
+    
+    function filterProcesses() {
+        const domainValue = domainFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        
+        processRows.forEach(row => {
+            const domainMatch = !domainValue || row.dataset.domain === domainValue;
+            const searchMatch = !searchValue || 
+                row.dataset.name.includes(searchValue) || 
+                row.dataset.author.includes(searchValue);
+            
+            row.style.display = (domainMatch && searchMatch) ? '' : 'none';
+        });
+    }
+    
+    domainFilter.addEventListener('change', filterProcesses);
+    searchInput.addEventListener('input', filterProcesses);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,181 @@
+{# templates/directory/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Annuaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Annuaire</h2>
+    <a href="directory.php?action=add" class="btn btn-primary">Nouveau contact</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-type">
+            <option value="">Tous les types</option>
+            <option value="internal_staff">Collaborateur interne</option>
+            <option value="vendor">Fournisseur</option>
+            <option value="contractor">Prestataire</option>
+            <option value="public_service">Service public</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-contacts" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Société</th>
+                <th scope="col">Téléphone</th>
+                <th scope="col">Email</th>
+                <th scope="col" class="text-center" style="width: 1px;"></th>
+            </tr>
+        </thead>
+        <tbody id="contacts-table-body">
+            {% for contact in contacts %}
+            <tr class="contact-row clickable-row"
+                data-type="{{ contact.contact_type }}"
+                data-name="{{ contact.name|lower }}"
+                data-company="{{ contact.company|lower|default('') }}">
+                <td><strong>{{ contact.name }}</strong></td>
+                <td>{{ contact.company|default('—') }}</td>
+                <td>
+                    {% if contact.phone %}
+        <a href="tel:{{ contact.phone }}" class="text-decoration-none text-primary">
+            <i class="fas fa-phone me-1"></i>&nbsp;{{ contact.phone }}
+        </a>
+    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                     {% if contact.email %}
+        <a href="mailto:{{ contact.email }}" class="text-decoration-none text-primary">
+            <i class="fas fa-envelope me-1"></i>&nbsp;{{ contact.email }}
+        </a>
+    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="text-center align-middle">
+                    <a href="directory.php?action=edit&id={{ contact.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr class="contact-details d-none">
+                <td colspan="5" class="p-0">
+                    <div class="container-fluid p-3 bg-light">
+                        <div class="row small g-3">
+                            <div class="col-md-4"><strong>Type:</strong> 
+                                {% if contact.contact_type == 'internal_staff' %}Collaborateur interne
+                                {% elseif contact.contact_type == 'vendor' %}Fournisseur
+                                {% elseif contact.contact_type == 'contractor' %}Prestataire
+                                {% elseif contact.contact_type == 'public_service' %}Service public
+                                {% endif %}
+                            </div>
+                            <div class="col-md-4"><strong>Fonction:</strong> {{ contact.position|default('—') }}</div>
+                            <div class="col-md-4"><strong>Domaine:</strong> {{ contact.expertise_area|default('—') }}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucun contact trouvé</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.clickable-row {
+    cursor: pointer;
+}
+.clickable-row:hover {
+    background-color: rgba(0,0,0,.075);
+}
+.btn-outline-primary.border-0 {
+    border: none !important;
+}
+.contact-details td {
+    border-top: none;
+    padding: 0 !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle détails contact au clic sur la ligne
+    document.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', function (e) {
+            // Ne pas déplier si on clique sur le bouton d'édition
+            if (e.target.closest('.btn-outline-primary')) {
+                return;
+            }
+            
+            // Trouver la ligne de détails suivante
+            const detailsRow = this.nextElementSibling;
+            if (detailsRow && detailsRow.classList.contains('contact-details')) {
+                detailsRow.classList.toggle('d-none');
+            }
+        });
+    });
+
+    // Filtrage
+    const typeFilter = document.getElementById('filter-type');
+    const searchInput = document.getElementById('search-contacts');
+    const contactRows = document.querySelectorAll('.contact-row');
+
+    function filterContacts() {
+        const typeValue = typeFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+
+        contactRows.forEach(row => {
+            const typeMatch = !typeValue || row.dataset.type === typeValue;
+            const nameMatch = !searchValue ||
+                row.dataset.name.includes(searchValue) ||
+                row.dataset.company.includes(searchValue);
+
+            row.style.display = (typeMatch && nameMatch) ? '' : 'none';
+            
+            // Cacher aussi la ligne de détails si la ligne principale est cachée
+            const detailsRow = row.nextElementSibling;
+            if (detailsRow && detailsRow.classList.contains('contact-details')) {
+                if (row.style.display === 'none') {
+                    detailsRow.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    typeFilter.addEventListener('change', filterContacts);
+    searchInput.addEventListener('input', filterContacts);
+});
+</script>
+{% endblock %}

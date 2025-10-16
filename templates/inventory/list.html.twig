@@ -1,0 +1,222 @@
+{# templates/inventory/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Inventaire{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Inventaire</h2>
+    <a href="inventory.php?action=add" class="btn btn-primary">Nouvel équipement</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-category">
+            <option value="">Toutes les catégories</option>
+            <option value="workstation">Poste de travail</option>
+            <option value="server">Serveur</option>
+            <option value="printer">Imprimante</option>
+            <option value="network_rack">Baie réseau</option>
+            <option value="camera">Caméra</option>
+            <option value="badge_reader">Badgeuse</option>
+            <option value="phone">Téléphone</option>
+            <option value="other">Autre</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="active">En service</option>
+            <option value="broken">En panne</option>
+            <option value="decommissioned">Réformé</option>
+            <option value="in_stock">En stock</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-inventory" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Désignation</th>
+                <th scope="col">Catégorie</th>
+                <th scope="col">Modèle / Série</th>
+                <th scope="col">Localisation</th>
+                <th scope="col" class="text-center" style="width: 1px;"></th>
+            </tr>
+        </thead>
+        <tbody id="inventory-table-body">
+            {% for item in items %}
+            <tr class="inventory-row clickable-row"
+                data-category="{{ item.category }}"
+                data-status="{{ item.status }}"
+                data-label="{{ item.label|lower }}"
+                data-model="{{ (item.model ~ ' ' ~ item.serial_number)|lower }}">
+                <td>
+                    <strong>{{ item.label }}</strong>
+                    {% if item.notes %}
+                        <div class="notes-tooltip" 
+                             data-bs-toggle="tooltip" 
+                             data-bs-placement="top"
+                             title="{{ item.notes|slice(0, 100) ~ (item.notes|length > 100 ? '...' : '') }}">
+                            <small class="text-muted">Notes: {{ item.notes|slice(0, 50) ~ (item.notes|length > 50 ? '...' : '') }}</small>
+                        </div>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if item.category == 'workstation' %}Poste de travail
+                    {% elseif item.category == 'server' %}Serveur
+                    {% elseif item.category == 'printer' %}Imprimante
+                    {% elseif item.category == 'network_rack' %}Baie réseau
+                    {% elseif item.category == 'camera' %}Caméra
+                    {% elseif item.category == 'badge_reader' %}Badgeuse
+                    {% elseif item.category == 'phone' %}Téléphone
+                    {% else %}Autre{% endif %}
+                </td>
+                <td>
+                    {% if item.model or item.serial_number %}
+                        {{ item.model|default('') }} {% if item.serial_number %}({{ item.serial_number }}){% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>{{ item.location|default('—') }}</td>
+                <td class="text-center align-middle">
+                    <a href="inventory.php?action=edit&id={{ item.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            <tr class="inventory-details d-none">
+                <td colspan="5" class="p-0">
+                    <div class="container-fluid p-3 bg-light">
+                        <div class="row small g-3">
+                            <div class="col-md-4"><strong>Statut:</strong>
+                                <span class="badge
+                                    {% if item.status == 'active' %}bg-success
+                                    {% elseif item.status == 'broken' %}bg-danger
+                                    {% elseif item.status == 'decommissioned' %}bg-secondary
+                                    {% else %}bg-warning text-dark{% endif %}">
+                                    {% if item.status == 'active' %}En service
+                                    {% elseif item.status == 'broken' %}En panne
+                                    {% elseif item.status == 'decommissioned' %}Réformé
+                                    {% else %}En stock{% endif %}
+                                </span>
+                            </div>
+                            <div class="col-md-4"><strong>Installé le:</strong> {{ item.installation_date ? item.installation_date|date('d/m/Y') : '—' }}</div>
+                            <div class="col-md-4"><strong>Technicien:</strong> {{ item.technician_name|default('—') }}</div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucun équipement trouvé</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.clickable-row {
+    cursor: pointer;
+}
+.clickable-row:hover {
+    background-color: rgba(0,0,0,.075);
+}
+.btn-outline-primary.border-0 {
+    border: none !important;
+}
+.inventory-details td {
+    border-top: none;
+    padding: 0 !important;
+}
+.notes-tooltip {
+    cursor: help;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Activer les tooltips Bootstrap
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+        new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Toggle détails équipement au clic sur la ligne
+    document.querySelectorAll('.clickable-row').forEach(function(row) {
+        row.addEventListener('click', function (e) {
+            // Ne pas déplier si on clique sur le bouton d'édition
+            if (e.target.closest('.btn-outline-primary')) {
+                return;
+            }
+            
+            // Trouver la ligne de détails suivante
+            const detailsRow = this.nextElementSibling;
+            if (detailsRow && detailsRow.classList.contains('inventory-details')) {
+                detailsRow.classList.toggle('d-none');
+            }
+        });
+    });
+
+    // Filtrage
+    const categoryFilter = document.getElementById('filter-category');
+    const statusFilter = document.getElementById('filter-status');
+    const searchInput = document.getElementById('search-inventory');
+    const inventoryRows = document.querySelectorAll('.inventory-row');
+
+    function filterInventory() {
+        const categoryValue = categoryFilter.value;
+        const statusValue = statusFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+
+        inventoryRows.forEach(function(row) {
+            const categoryMatch = !categoryValue || row.dataset.category === categoryValue;
+            const statusMatch = !statusValue || row.dataset.status === statusValue;
+            const searchMatch = !searchValue ||
+                row.dataset.label.includes(searchValue) ||
+                row.dataset.model.includes(searchValue);
+
+            row.style.display = (categoryMatch && statusMatch && searchMatch) ? '' : 'none';
+            
+            // Cacher aussi la ligne de détails si la ligne principale est cachée
+            const detailsRow = row.nextElementSibling;
+            if (detailsRow && detailsRow.classList.contains('inventory-details')) {
+                if (row.style.display === 'none') {
+                    detailsRow.style.display = 'none';
+                }
+            }
+        });
+    }
+
+    categoryFilter.addEventListener('change', filterInventory);
+    statusFilter.addEventListener('change', filterInventory);
+    searchInput.addEventListener('input', filterInventory);
+});
+</script>
+{% endblock %}

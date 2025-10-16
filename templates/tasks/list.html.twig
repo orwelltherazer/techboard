@@ -1,0 +1,186 @@
+{# templates/tasks/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Tâches{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gestion des tâches</h2>
+    <a href="tasks.php?action=add" class="btn btn-primary">Nouvelle tâche</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="not_started">Non commencée</option>
+            <option value="in_progress">En cours</option>
+            <option value="completed">Terminée</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-tasks" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Titre</th>
+                <th scope="col">Statut</th>
+                <th scope="col">Avancement</th>
+                <th scope="col">Échéance</th>
+                <th scope="col" class="text-center" style="width: 1px;"></th>
+            </tr>
+        </thead>
+        <tbody id="tasks-table-body">
+            {% for task in tasks %}
+            <tr class="task-row clickable-row"
+                data-status="{{ task.status }}"
+                data-title="{{ task.title|lower }}"
+                data-project="{{ task.project_name|lower|default('') }}"
+                data-assignee="{{ task.assignee_name|lower|default('') }}">
+                <td>
+                    <div>
+                        <strong>{{ task.title }}</strong>
+                        {% if task.description %}
+                            <div class="text-muted small mt-1">{{ task.description|slice(0, 60) ~ (task.description|length > 60 ? '...' : '') }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="task-details mt-2 d-none">
+                        <div class="row small">
+                            <div class="col-md-3"><strong>Projet :</strong> {{ task.project_name|default('—') }}</div>
+                            <div class="col-md-3"><strong>Assigné à :</strong> {{ task.assignee_name|default('Non assigné') }}</div>
+                            <div class="col-md-3">
+                                <strong>Catégorie:</strong> 
+                                {% if task.category == 'it' %}Informatique
+                                {% elseif task.category == 'maintenance' %}Maintenance
+                                {% elseif task.category == 'communication' %}Communication
+                                {% elseif task.category == 'security' %}Sécurité
+                                {% elseif task.category == 'network' %}Réseau
+                                {% else %}Autre{% endif %}
+                            </div>
+                            <div class="col-md-3"><strong>Créée le:</strong> {{ task.created_at|date('d/m/Y') }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge fw-bold
+                        {% if task.status == 'not_started' %}bg-secondary
+                        {% elseif task.status == 'in_progress' %}bg-warning text-dark
+                        {% else %}bg-success{% endif %}">
+                        {% if task.status == 'not_started' %}A faire
+                        {% elseif task.status == 'in_progress' %}En cours
+                        {% else %}Fini{% endif %}
+                    </span>
+                </td>
+                <td class="text-center align-middle">
+                    <div class="progress" style="height: 6px; width: 80px;">
+                        <div class="progress-bar
+                            {% if task.progress_percent < 30 %}bg-danger
+                            {% elseif task.progress_percent < 70 %}bg-warning
+                            {% else %}bg-success{% endif %}"
+                            role="progressbar"
+                            style="width: {{ task.progress_percent }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted">{{ task.progress_percent }}%</small>
+                </td>
+                <td class="text-center align-middle">
+                    {% if task.due_date %}
+                        {{ task.due_date|date('d/m/Y') }}
+                        {% if task.due_date < 'now'|date('Y-m-d') and task.status != 'completed' %}
+                            <i class="fas fa-exclamation-circle text-danger ms-1" title="En retard"></i>
+                        {% endif %}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td class="text-center align-middle">
+                    <a href="tasks.php?action=edit&id={{ task.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucune tâche trouvée</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<style>
+.clickable-row {
+    cursor: pointer;
+}
+.clickable-row:hover {
+    background-color: rgba(0,0,0,.075);
+}
+.btn-outline-primary.border-0 {
+    border: none !important;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Toggle détails tâche au clic sur la ligne
+    document.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', function (e) {
+            // Ne pas déplier si on clique sur le bouton d'édition
+            if (e.target.closest('.btn-outline-primary')) {
+                return;
+            }
+            
+            const details = this.querySelector('.task-details');
+            details.classList.toggle('d-none');
+        });
+    });
+
+    // Filtrage
+    const statusFilter = document.getElementById('filter-status');
+    const searchInput = document.getElementById('search-tasks');
+    const taskRows = document.querySelectorAll('.task-row');
+
+    function filterTasks() {
+        const statusValue = statusFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+
+        taskRows.forEach(row => {
+            const statusMatch = !statusValue || row.dataset.status === statusValue;
+            const titleMatch = !searchValue ||
+                row.dataset.title.includes(searchValue) ||
+                row.dataset.project.includes(searchValue) ||
+                row.dataset.assignee.includes(searchValue);
+
+            row.style.display = (statusMatch && titleMatch) ? '' : 'none';
+        });
+    }
+
+    statusFilter.addEventListener('change', filterTasks);
+    searchInput.addEventListener('input', filterTasks);
+});
+</script>
+{% endblock %}

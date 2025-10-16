@@ -1,0 +1,163 @@
+{# templates/resources/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Ressources{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Ressources</h2>
+    <a href="resources.php?action=add" class="btn btn-primary">Nouvelle ressource</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-type">
+            <option value="">Tous les types</option>
+            <option value="hardware">Matériel</option>
+            <option value="software">Logiciel</option>
+            <option value="human">Humain</option>
+            <option value="service">Service</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-resources" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Nom</th>
+                <th scope="col">Type</th>
+                <th scope="col">Fournisseur</th>
+                <th scope="col">Localisation</th>
+                <th scope="col">Actions</th>
+            </tr>
+        </thead>
+        <tbody id="resources-table-body">
+            {% for resource in resources %}
+            <tr class="resource-row" 
+                data-type="{{ resource.resource_type }}" 
+                data-name="{{ resource.name|lower }}"
+                data-vendor="{{ resource.vendor_name|lower|default('') }}"
+                data-location="{{ resource.location|lower|default('') }}"
+                data-id="resource-{{ resource.id }}">
+                <td>
+                    <strong>{{ resource.name }}</strong>
+                    <div class="resource-details d-none mt-2 p-2 bg-light rounded" id="details-{{ resource.id }}">
+                        <div><strong>Description d'usage :</strong> {{ resource.usage_description|default('—') }}</div>
+                        {% if resource.documentation_url %}
+                            <div><strong>Documentation :</strong> 
+                                <a href="{{ resource.documentation_url }}" target="_blank" class="text-decoration-none text-primary">
+                                    <i class="fas fa-external-link-alt me-1"></i>{{ resource.documentation_url }}
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    {% if resource.resource_type == 'hardware' %}Matériel
+                    {% elseif resource.resource_type == 'software' %}Logiciel
+                    {% elseif resource.resource_type == 'human' %}Humain
+                    {% elseif resource.resource_type == 'service' %}Service
+                    {% else %}Autre{% endif %}
+                </td>
+                <td>{{ resource.vendor_name|default('—') }}</td>
+                <td>{{ resource.location|default('—') }}</td>
+                <td>
+                    <a href="resources.php?action=edit&id={{ resource.id }}" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Aucune ressource trouvée</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const typeFilter = document.getElementById('filter-type');
+    const searchInput = document.getElementById('search-resources');
+    const resourceRows = document.querySelectorAll('.resource-row');
+    let currentlyExpanded = null;
+    
+    resourceRows.forEach(row => {
+        const cell = row.querySelector('td:first-child');
+        const details = row.querySelector('.resource-details');
+        const resourceId = row.dataset.id;
+        
+        cell.style.cursor = 'pointer';
+        
+        cell.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') return;
+            
+            if (currentlyExpanded && currentlyExpanded !== resourceId) {
+                document.getElementById('details-' + currentlyExpanded.split('-')[1]).classList.add('d-none');
+            }
+            
+            if (details.classList.contains('d-none')) {
+                details.classList.remove('d-none');
+                currentlyExpanded = resourceId;
+            } else {
+                details.classList.add('d-none');
+                currentlyExpanded = null;
+            }
+        });
+    });
+    
+    function filterResources() {
+        const typeValue = typeFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        
+        resourceRows.forEach(row => {
+            const typeMatch = !typeValue || row.dataset.type === typeValue;
+            const searchMatch = !searchValue || 
+                row.dataset.name.includes(searchValue) || 
+                row.dataset.vendor.includes(searchValue) ||
+                row.dataset.location.includes(searchValue);
+            
+            row.style.display = (typeMatch && searchMatch) ? '' : 'none';
+            
+            if (!typeMatch || !searchMatch) {
+                const details = row.querySelector('.resource-details');
+                if (details && !details.classList.contains('d-none')) {
+                    details.classList.add('d-none');
+                    if (currentlyExpanded === row.dataset.id) {
+                        currentlyExpanded = null;
+                    }
+                }
+            }
+        });
+    }
+    
+    typeFilter.addEventListener('change', filterResources);
+    searchInput.addEventListener('input', filterResources);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,117 @@
+{# templates/communications/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouvelle' }} demande{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ is_edit ? 'Modifier la demande' : 'Nouvelle demande de communication' }}</h2>
+    <a href="communications.php" class="btn btn-outline-secondary">← Retour</a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-12">
+        <label for="subject" class="form-label fw-bold">Objet *</label>
+        <input type="text" class="form-control" id="subject" name="subject" value="{{ comm.subject ?? '' }}" required>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="requester" class="form-label fw-bold">Demandeur</label>
+        <input type="text" class="form-control" id="requester" name="requester" value="{{ comm.requester ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label class="form-label fw-bold">Support(s) concerné(s)</label>
+        <div class="row">
+            <div class="col-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="channels[]" value="facebook" id="facebook" 
+                           {% if 'facebook' in existing_channels %}checked{% endif %}>
+                    <label class="form-check-label" for="facebook">Facebook</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="channels[]" value="website" id="website" 
+                           {% if 'website' in existing_channels %}checked{% endif %}>
+                    <label class="form-check-label" for="website">Site web</label>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="channels[]" value="intramuros" id="intramuros" 
+                           {% if 'intramuros' in existing_channels %}checked{% endif %}>
+                    <label class="form-check-label" for="intramuros">Intramuros</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="channels[]" value="panneaux" id="panneaux" 
+                           {% if 'panneaux' in existing_channels %}checked{% endif %}>
+                    <label class="form-check-label" for="panneaux">Panneaux lumineux</label>
+                </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="channels[]" value="tv" id="tv" 
+                           {% if 'tv' in existing_channels %}checked{% endif %}>
+                    <label class="form-check-label" for="tv">TV</label>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-12">
+        <label for="message" class="form-label fw-bold">Contenu / Message à diffuser</label>
+        <textarea class="form-control" id="message" name="message" rows="4">{{ comm.message ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-4">
+        <label for="event_date" class="form-label fw-bold">Date de l'événement</label>
+        <input type="date" class="form-control" id="event_date" name="event_date" value="{{ comm.event_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-4">
+        <label for="publication_start_date" class="form-label fw-bold">Date de début de publication</label>
+        <input type="date" class="form-control" id="publication_start_date" name="publication_start_date" value="{{ comm.publication_start_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-4">
+        <label for="publication_end_date" class="form-label fw-bold">Date de fin de publication</label>
+        <input type="date" class="form-control" id="publication_end_date" name="publication_end_date" value="{{ comm.publication_end_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="status" class="form-label fw-bold">État d'avancement</label>
+        <select class="form-select" id="status" name="status">
+            <option value="pending" {% if (comm.status ?? 'pending') == 'pending' %}selected{% endif %}>À traiter</option>
+            <option value="published" {% if (comm.status ?? 'published') == 'published' %}selected{% endif %}>Publiée</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="assigned_to" class="form-label fw-bold">Responsable / Collaborateur</label>
+        <select class="form-select" id="assigned_to" name="assigned_to">
+            <option value="">Non assigné</option>
+            {% for contact in contacts %}
+            <option value="{{ contact.id }}" {% if contact.id == (comm.assigned_to ?? null) %}selected{% endif %}>
+                {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="processed_at" class="form-label fw-bold">Date de traitement</label>
+        <input type="datetime-local" class="form-control" id="processed_at" name="processed_at" 
+               value="{{ comm.processed_at ? comm.processed_at|date('Y-m-d\\TH:i') : '' }}">
+    </div>
+    
+    <div class="col-12">
+        <label for="internal_comments" class="form-label fw-bold">Commentaires internes / Échanges</label>
+        <textarea class="form-control" id="internal_comments" name="internal_comments" rows="3">{{ comm.internal_comments ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">{{ is_edit ? 'Mettre à jour' : 'Créer la demande' }}</button>
+    </div>
+</form>
+{% endblock %}

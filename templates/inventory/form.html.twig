@@ -1,0 +1,103 @@
+{# templates/inventory/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouvel' }} équipement{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ is_edit ? 'Modifier l\'équipement' : 'Nouvel équipement' }}</h2>
+    <a href="inventory.php" class="btn btn-outline-secondary">← Retour</a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-6">
+        <label for="label" class="form-label fw-bold">Désignation *</label>
+        <input type="text" class="form-control" id="label" name="label" value="{{ item.label ?? '' }}" required>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="category" class="form-label fw-bold">Catégorie</label>
+        <select class="form-select" id="category" name="category">
+            <option value="workstation" {% if (item.category ?? 'other') == 'workstation' %}selected{% endif %}>Poste de travail</option>
+            <option value="server" {% if (item.category ?? '') == 'server' %}selected{% endif %}>Serveur</option>
+            <option value="printer" {% if (item.category ?? '') == 'printer' %}selected{% endif %}>Imprimante</option>
+            <option value="network_rack" {% if (item.category ?? '') == 'network_rack' %}selected{% endif %}>Baie réseau</option>
+            <option value="camera" {% if (item.category ?? '') == 'camera' %}selected{% endif %}>Caméra</option>
+            <option value="badge_reader" {% if (item.category ?? '') == 'badge_reader' %}selected{% endif %}>Badgeuse</option>
+            <option value="phone" {% if (item.category ?? '') == 'phone' %}selected{% endif %}>Téléphone</option>
+            <option value="other" {% if (item.category ?? 'other') == 'other' %}selected{% endif %}>Autre</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="model" class="form-label fw-bold">Modèle</label>
+        <input type="text" class="form-control" id="model" name="model" value="{{ item.model ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="serial_number" class="form-label fw-bold">Numéro de série</label>
+        <input type="text" class="form-control" id="serial_number" name="serial_number" value="{{ item.serial_number ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="location" class="form-label fw-bold">Localisation</label>
+        <input type="text" class="form-control" id="location" name="location" value="{{ item.location ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="status" class="form-label fw-bold">Statut</label>
+        <select class="form-select" id="status" name="status">
+            <option value="active" {% if (item.status ?? 'active') == 'active' %}selected{% endif %}>En service</option>
+            <option value="broken" {% if (item.status ?? '') == 'broken' %}selected{% endif %}>En panne</option>
+            <option value="decommissioned" {% if (item.status ?? '') == 'decommissioned' %}selected{% endif %}>Réformé</option>
+            <option value="in_stock" {% if (item.status ?? '') == 'in_stock' %}selected{% endif %}>En stock</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="installation_date" class="form-label fw-bold">Date d'installation</label>
+        <input type="date" class="form-control" id="installation_date" name="installation_date" value="{{ item.installation_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="last_status_update" class="form-label fw-bold">Dernière mise à jour du statut</label>
+        <input type="date" class="form-control" id="last_status_update" name="last_status_update" value="{{ item.last_status_update ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="technician_id" class="form-label fw-bold">Responsable / Contact technique</label>
+        <select class="form-select" id="technician_id" name="technician_id">
+            <option value="">Non assigné</option>
+            {% for contact in contacts %}
+            <option value="{{ contact.id }}" {% if contact.id == (item.technician_id ?? null) %}selected{% endif %}>
+                {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="col-12">
+        <label for="notes" class="form-label fw-bold">Notes / Historique</label>
+        <textarea class="form-control" id="notes" name="notes" rows="3">{{ item.notes ?? '' }}</textarea>
+    </div>
+    
+    {% if is_edit %}
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="archived" name="archived" {% if item.archived ?? false %}checked{% endif %}>
+            <label class="form-check-label" for="archived">
+                Archiver cet équipement (il disparaîtra de la liste principale)
+            </label>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">{{ is_edit ? 'Mettre à jour' : 'Ajouter l\'équipement' }}</button>
+    </div>
+</form>
+{% endblock %}

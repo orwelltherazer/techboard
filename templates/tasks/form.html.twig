@@ -1,0 +1,123 @@
+{# templates/tasks/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouvelle' }} tâche{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>{{ is_edit ? 'Modifier la tâche' : 'Nouvelle tâche' }}</h2>
+    <a href="tasks.php" class="btn btn-outline-secondary">← Retour</a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<form method="POST" class="row g-3">
+    <div class="col-md-12">
+        <label for="title" class="form-label fw-bold">Titre *</label>
+        <input type="text" class="form-control" id="title" name="title" value="{{ task.title ?? '' }}" required>
+    </div>
+    
+    <div class="col-md-12">
+        <label for="description" class="form-label fw-bold">Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3">{{ task.description ?? '' }}</textarea>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="category" class="form-label fw-bold">Catégorie</label>
+        <select class="form-select" id="category" name="category">
+            <option value="it" {% if (task.category ?? 'it') == 'it' %}selected{% endif %}>Informatique</option>
+            <option value="maintenance" {% if (task.category ?? '') == 'maintenance' %}selected{% endif %}>Maintenance</option>
+            <option value="communication" {% if (task.category ?? '') == 'communication' %}selected{% endif %}>Communication</option>
+            <option value="security" {% if (task.category ?? '') == 'security' %}selected{% endif %}>Sécurité</option>
+            <option value="network" {% if (task.category ?? '') == 'network' %}selected{% endif %}>Réseau</option>
+            <option value="other" {% if (task.category ?? '') == 'other' %}selected{% endif %}>Autre</option>
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="status" class="form-label fw-bold">Statut</label>
+        <select class="form-select" id="status" name="status">
+            <option value="not_started" {% if (task.status ?? 'not_started') == 'not_started' %}selected{% endif %}>A faire</option>
+            <option value="in_progress" {% if (task.status ?? '') == 'in_progress' %}selected{% endif %}>En cours</option>
+            <option value="completed" {% if (task.status ?? '') == 'completed' %}selected{% endif %}>Fait</option>
+        </select>
+    </div>
+ <div class="col-md-6">
+  <label for="progress_percent" class="form-label fw-semibold">
+    Avancement <span class="text-muted small">(%)</span>
+  </label>
+
+  <input
+    type="range"
+    class="form-range mb-0"
+    id="progress_percent"
+    name="progress_percent"
+    min="0"
+    max="100"
+    value="{{ task.progress_percent ?? '0' }}"
+    oninput="document.getElementById('progress_percent_value').textContent = this.value + '%'"
+    style="accent-color: var(--bs-primary); cursor: pointer;"
+  >
+
+  <div class="text-end mt-1">
+    <span id="progress_percent_value" class="fw-semibold text-primary small">
+      {{ task.progress_percent ?? '0' }}%
+    </span>
+  </div>
+</div>
+
+
+    <div class="col-md-6">
+        <label for="due_date" class="form-label fw-bold">Échéance</label>
+        <input type="date" class="form-control" id="due_date" name="due_date" value="{{ task.due_date ?? '' }}">
+    </div>
+    
+    <div class="col-md-6">
+        <label for="assignee_id" class="form-label fw-bold">Assigné à</label>
+        <select class="form-select" id="assignee_id" name="assignee_id">
+            <option value="">Non assigné</option>
+            {% for contact in contacts %}
+            <option value="{{ contact.id }}" {% if contact.id == (task.assignee_id ?? null) %}selected{% endif %}>
+                {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    <div class="col-md-6">
+        <label for="project_id" class="form-label fw-bold">Projet associé</label>
+        <select class="form-select" id="project_id" name="project_id">
+            <option value="">Aucun projet</option>
+            {% for project in projects %}
+            <option value="{{ project.id }}" {% if project.id == (task.project_id ?? null) %}selected{% endif %}>
+                {{ project.name }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+    
+    {% if is_edit %}
+    <div class="col-12">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="archived" name="archived" {% if task.archived ?? false %}checked{% endif %}>
+            <label class="form-check-label" for="archived">
+                Archiver cette tâche (elle disparaîtra de la liste principale)
+            </label>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="col-12 text-end">
+        <button type="submit" class="btn btn-primary">{{ is_edit ? 'Mettre à jour' : 'Créer la tâche' }}</button>
+    </div>
+</form>
+<style>
+    /* Ajustement du padding pour éviter que le texte ne soit coupé */
+    #progress_percent_value {
+        padding: 0 0.5rem;
+        transition: transform 0.1s ease-out;
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,5 @@
+# Fichiers de base de données
+dump.sql
+
+# Dépendances PHP (ou autres)
+vendor/

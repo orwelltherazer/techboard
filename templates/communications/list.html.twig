@@ -1,0 +1,205 @@
+{# templates/communications/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Communications{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Demandes de communication</h2>
+    <a href="communications.php?action=add" class="btn btn-primary">Nouvelle demande</a>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-status">
+            <option value="">Tous les statuts</option>
+            <option value="pending">À traiter</option>
+            <option value="in_progress">En cours</option>
+            <option value="published">Publié</option>
+            <option value="archived">Archivé</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-comms" placeholder="Rechercher...">
+    </div>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Sujet</th>
+                <th scope="col">Supports</th>
+                <th scope="col">Événement</th>
+                <th scope="col">Publication</th>
+                <th scope="col">Statut</th>
+                <th scope="col"></th>
+            </tr>
+        </thead>
+        <tbody id="comms-table-body">
+            {% for comm in communications %}
+            <tr class="comm-row" 
+                data-status="{{ comm.status }}" 
+                data-subject="{{ comm.subject|lower }}"
+                data-id="comm-{{ comm.id }}">
+                <td>
+                    <strong>{{ comm.subject }}</strong>
+                    <div class="comm-details d-none mt-2 p-2 bg-light rounded" id="details-{{ comm.id }}">
+                        <div><strong>Demandeur :</strong> {{ comm.requester|default('—') }}</div>
+                        <div><strong>Message :</strong> {{ comm.message|nl2br }}</div>
+                        <div><strong>Assigné à :</strong> {{ comm.assigned_name|default('Non assigné') }}</div>
+                        <div><strong>Reçue le :</strong> {{ comm.received_at|date('d/m/Y H:i') }}</div>
+                        {% if comm.processed_at %}
+                            <div><strong>Traitée le :</strong> {{ comm.processed_at|date('d/m/Y H:i') }}</div>
+                        {% endif %}
+                        {% if comm.internal_comments %}
+                            <div><strong>Commentaires internes :</strong> {{ comm.internal_comments|nl2br }}</div>
+                        {% endif %}
+                    </div>
+                </td>
+                <td>
+                    {% set channels_array = comm.channels|split(', ') %}
+                    {% if channels_array|length == 1 %}
+                        {% set channel_names = {
+                            'facebook': 'Facebook',
+                            'website': 'Site web',
+                            'intramuros': 'Intramuros',
+                            'panneaux': 'Panneaux lumineux',
+                            'tv': 'TV'
+                        } %}
+                        {% if channels_array[0] in channel_names %}
+                            {{ channel_names[channels_array[0]] }}
+                        {% else %}
+                            <span class="badge bg-primary">{{ channels_array[0] }}</span>
+                        {% endif %}
+                    {% else %}
+                        <span class="badge bg-secondary">Multiples</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if comm.event_date %}
+                        {{ comm.event_date|date('d/m/Y') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    {% if comm.publication_start_date and comm.publication_end_date %}
+                        {{ comm.publication_start_date|date('d/m') }} → {{ comm.publication_end_date|date('d/m/Y') }}
+                    {% elseif comm.publication_start_date %}
+                        {{ comm.publication_start_date|date('d/m/Y') }} → —
+                    {% elseif comm.publication_end_date %}
+                        — → {{ comm.publication_end_date|date('d/m/Y') }}
+                    {% else %}
+                        —
+                    {% endif %}
+                </td>
+                <td>
+                    <span class="badge 
+                        {% if comm.status == 'pending' %}bg-warning text-dark
+                        {% elseif comm.status == 'in_progress' %}bg-info
+                        {% elseif comm.status == 'published' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {% if comm.status == 'pending' %}À traiter
+                        {% elseif comm.status == 'in_progress' %}En cours
+                        {% elseif comm.status == 'published' %}Publié
+                        {% else %}Archivé{% endif %}
+                    </span>
+                </td>
+                <td>
+                    <a href="communications.php?action=edit&id={{ comm.id }}" class="btn btn-sm btn-outline-primary border-0">
+                        <i class="fas fa-edit"></i>
+                    </a>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" class="text-center text-muted">Aucune demande trouvée</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const statusFilter = document.getElementById('filter-status');
+    const searchInput = document.getElementById('search-comms');
+    const commRows = document.querySelectorAll('.comm-row');
+    let currentlyExpanded = null;
+    
+    // Gestion du clic sur les lignes
+    commRows.forEach(row => {
+        const cell = row.querySelector('td:first-child');
+        const details = row.querySelector('.comm-details');
+        const commId = row.dataset.id;
+        
+        cell.style.cursor = 'pointer';
+        
+        cell.addEventListener('click', function(e) {
+            if (e.target.tagName === 'A') return;
+            
+            if (currentlyExpanded && currentlyExpanded !== commId) {
+                document.getElementById('details-' + currentlyExpanded.split('-')[1]).classList.add('d-none');
+            }
+            
+            if (details.classList.contains('d-none')) {
+                details.classList.remove('d-none');
+                currentlyExpanded = commId;
+            } else {
+                details.classList.add('d-none');
+                currentlyExpanded = null;
+            }
+        });
+    });
+    
+    // Filtre
+    function filterComms() {
+        const statusValue = statusFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+        
+        commRows.forEach(row => {
+            const statusMatch = !statusValue || row.dataset.status === statusValue;
+            const subjectMatch = !searchValue || 
+                row.dataset.subject.includes(searchValue) || 
+                row.dataset.channel.includes(searchValue);
+            
+            row.style.display = (statusMatch && subjectMatch) ? '' : 'none';
+            
+            if (!statusMatch || !subjectMatch) {
+                const details = row.querySelector('.comm-details');
+                if (details && !details.classList.contains('d-none')) {
+                    details.classList.add('d-none');
+                    if (currentlyExpanded === row.dataset.id) {
+                        currentlyExpanded = null;
+                    }
+                }
+            }
+        });
+    }
+    
+    statusFilter.addEventListener('change', filterComms);
+    searchInput.addEventListener('input', filterComms);
+});
+</script>
+{% endblock %}
