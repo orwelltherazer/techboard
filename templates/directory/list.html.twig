@@ -6,7 +6,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Annuaire</h2>
-    <a href="directory.php?action=add" class="btn btn-primary">Nouveau contact</a>
+    <div>
+        <a href="directory.php?action=add" class="btn btn-primary">Nouveau contact</a>
+        {% if show_archived %}
+        <a href="directory.php" class="btn btn-outline-secondary ms-1">Contacts actifs</a>
+        {% else %}
+        <a href="directory.php?archived=1" class="btn btn-outline-secondary ms-1">Archivés</a>
+        {% endif %}
+    </div>
 </div>
 
 {% if success %}
@@ -61,23 +68,49 @@
                 data-type="{{ contact.contact_type }}"
                 data-name="{{ contact.name|lower }}"
                 data-company="{{ contact.company|lower|default('') }}">
-                <td><strong>{{ contact.name }}</strong></td>
+                <td>
+                    <div>
+                        <strong>{{ contact.name }}</strong>
+                        {% if contact.company %}
+                            <div class="text-muted small mt-1">{{ contact.company }}</div>
+                        {% endif %}
+                    </div>
+                    <div class="contact-details mt-2 d-none">
+                        <div class="row small">
+                            <div class="col-md-3"><strong>Type:</strong>
+                                {% if contact.contact_type == 'internal_staff' %}Collaborateur interne
+                                {% elseif contact.contact_type == 'vendor' %}Fournisseur
+                                {% elseif contact.contact_type == 'contractor' %}Prestataire
+                                {% elseif contact.contact_type == 'public_service' %}Service public
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3"><strong>Fonction:</strong> {{ contact.position|default('—') }}</div>
+                            <div class="col-md-3"><strong>Domaine:</strong> {{ contact.expertise_area|default('—') }}</div>
+                            <div class="col-md-3"><strong>Adresse:</strong> {{ contact.address|default('—') }}</div>
+                        </div>
+                        {% if contact.notes %}
+                        <div class="row small mt-1">
+                            <div class="col-md-12"><strong>Notes:</strong> {{ contact.notes }}</div>
+                        </div>
+                        {% endif %}
+                    </div>
+                </td>
                 <td>{{ contact.company|default('—') }}</td>
                 <td>
                     {% if contact.phone %}
-        <a href="tel:{{ contact.phone }}" class="text-decoration-none text-primary">
-            <i class="fas fa-phone me-1"></i>&nbsp;{{ contact.phone }}
-        </a>
-    {% else %}
+                    <a href="tel:{{ contact.phone }}" class="text-decoration-none text-primary">
+                        <i class="fas fa-phone me-1"></i>{{ contact.phone }}
+                    </a>
+                    {% else %}
                         —
                     {% endif %}
                 </td>
                 <td>
-                     {% if contact.email %}
-        <a href="mailto:{{ contact.email }}" class="text-decoration-none text-primary">
-            <i class="fas fa-envelope me-1"></i>&nbsp;{{ contact.email }}
-        </a>
-    {% else %}
+                    {% if contact.email %}
+                    <a href="mailto:{{ contact.email }}" class="text-decoration-none text-primary">
+                        <i class="fas fa-envelope me-1"></i>{{ contact.email }}
+                    </a>
+                    {% else %}
                         —
                     {% endif %}
                 </td>
@@ -85,32 +118,62 @@
                     <a href="directory.php?action=edit&id={{ contact.id }}" class="btn btn-sm btn-outline-primary border-0">
                         <i class="fas fa-edit"></i>
                     </a>
-                </td>
-            </tr>
-            <tr class="contact-details d-none">
-                <td colspan="5" class="p-0">
-                    <div class="container-fluid p-3 bg-light">
-                        <div class="row small g-3">
-                            <div class="col-md-4"><strong>Type:</strong> 
-                                {% if contact.contact_type == 'internal_staff' %}Collaborateur interne
-                                {% elseif contact.contact_type == 'vendor' %}Fournisseur
-                                {% elseif contact.contact_type == 'contractor' %}Prestataire
-                                {% elseif contact.contact_type == 'public_service' %}Service public
-                                {% endif %}
-                            </div>
-                            <div class="col-md-4"><strong>Fonction:</strong> {{ contact.position|default('—') }}</div>
-                            <div class="col-md-4"><strong>Domaine:</strong> {{ contact.expertise_area|default('—') }}</div>
-                        </div>
-                    </div>
+                    {% if show_archived %}
+                    <button class="btn btn-sm btn-outline-success border-0 unarchive-btn"
+                            data-id="{{ contact.id }}"
+                            title="Désarchiver">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-warning border-0 action-btn"
+                            data-id="{{ contact.id }}"
+                            data-action="archive"
+                            data-title="{{ contact.name }}"
+                            title="Archiver">
+                        <i class="fas fa-archive"></i>
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-outline-danger border-0 action-btn"
+                            data-id="{{ contact.id }}"
+                            data-action="delete"
+                            data-title="{{ contact.name }}"
+                            title="Supprimer">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="text-center text-muted">Aucun contact trouvé</td>
+                <td colspan="5" class="text-center text-muted">
+                    {% if show_archived %}
+                        Aucun contact archivé
+                    {% else %}
+                        Aucun contact trouvé
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+{# Modal de confirmation #}
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <!-- Message de confirmation -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmModalAction">Confirmer</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -120,30 +183,26 @@
 .clickable-row:hover {
     background-color: rgba(0,0,0,.075);
 }
-.btn-outline-primary.border-0 {
+.btn-outline-primary.border-0,
+.btn-outline-warning.border-0,
+.btn-outline-success.border-0,
+.btn-outline-danger.border-0 {
     border: none !important;
-}
-.contact-details td {
-    border-top: none;
-    padding: 0 !important;
 }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     // Toggle détails contact au clic sur la ligne
     document.querySelectorAll('.clickable-row').forEach(row => {
         row.addEventListener('click', function (e) {
-            // Ne pas déplier si on clique sur le bouton d'édition
-            if (e.target.closest('.btn-outline-primary')) {
+            // Ne pas déplier si on clique sur un bouton
+            if (e.target.closest('.btn')) {
                 return;
             }
-            
-            // Trouver la ligne de détails suivante
-            const detailsRow = this.nextElementSibling;
-            if (detailsRow && detailsRow.classList.contains('contact-details')) {
-                detailsRow.classList.toggle('d-none');
-            }
+
+            const details = this.querySelector('.contact-details');
+            details.classList.toggle('d-none');
         });
     });
 
@@ -163,19 +222,76 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.dataset.company.includes(searchValue);
 
             row.style.display = (typeMatch && nameMatch) ? '' : 'none';
-            
-            // Cacher aussi la ligne de détails si la ligne principale est cachée
-            const detailsRow = row.nextElementSibling;
-            if (detailsRow && detailsRow.classList.contains('contact-details')) {
-                if (row.style.display === 'none') {
-                    detailsRow.style.display = 'none';
-                }
-            }
         });
     }
 
     typeFilter.addEventListener('change', filterContacts);
     searchInput.addEventListener('input', filterContacts);
+
+    // Modal de confirmation
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmModalTitle = document.getElementById('confirmModalTitle');
+    const confirmModalBody = document.getElementById('confirmModalBody');
+    const confirmModalAction = document.getElementById('confirmModalAction');
+    let pendingAction = null;
+    let pendingId = null;
+
+    // Gestion des actions avec confirmation
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const id = this.dataset.id;
+            const title = this.dataset.title;
+
+            pendingAction = action;
+            pendingId = id;
+
+            if (action === 'archive') {
+                confirmModalTitle.textContent = 'Archiver le contact';
+                confirmModalBody.innerHTML = `Êtes-vous sûr de vouloir archiver le contact <strong>"${title}"</strong> ?`;
+                confirmModalAction.className = 'btn btn-warning';
+                confirmModalAction.innerHTML = '<i class="fas fa-archive"></i> Archiver';
+            } else if (action === 'delete') {
+                confirmModalTitle.textContent = 'Supprimer le contact';
+                confirmModalBody.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement le contact <strong>"${title}"</strong> ?<br><span class="text-danger small">Cette action est irréversible.</span>`;
+                confirmModalAction.className = 'btn btn-danger';
+                confirmModalAction.innerHTML = '<i class="fas fa-trash-alt"></i> Supprimer';
+            }
+
+            confirmModal.show();
+        });
+    });
+
+    // Confirmation de l'action
+    confirmModalAction.addEventListener('click', function() {
+        if (pendingAction && pendingId) {
+            sendAction(pendingAction, pendingId);
+            confirmModal.hide();
+        }
+    });
+
+    // Désarchiver sans confirmation
+    document.querySelectorAll('.unarchive-btn').forEach(btn => {
+        btn.addEventListener('click', () => sendAction('unarchive', btn.dataset.id));
+    });
 });
+
+// Fonction pour envoyer l'action
+function sendAction(action, id) {
+    fetch(`directory.php?action=${action}&id=${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'opération');
+        }
+    })
+    .catch(error => {
+        alert('Erreur de connexion');
+    });
+}
 </script>
 {% endblock %}

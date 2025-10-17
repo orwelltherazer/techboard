@@ -1,0 +1,185 @@
+{# templates/orders/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouvelle' }} commande{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">{{ is_edit ? 'Modifier la commande' : 'Nouvelle commande' }}</h2>
+    <a href="orders.php" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm" style="background-color: #fafafa;">
+    <div class="card-body p-3">
+        <form method="POST">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label for="reference" class="form-label small fw-bold">Référence *</label>
+                    <input type="text" class="form-control form-control-sm" id="reference" name="reference" value="{{ order.reference ?? '' }}" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="vendor_id" class="form-label small fw-bold">Fournisseur</label>
+                    <select class="form-select form-select-sm" id="vendor_id" name="vendor_id">
+                        <option value="">Aucun fournisseur</option>
+                        {% for contact in contacts %}
+                        <option value="{{ contact.id }}" {% if contact.id == (order.vendor_id ?? null) %}selected{% endif %}>
+                            {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <label for="description" class="form-label small fw-bold">Description</label>
+                    <textarea class="form-control form-control-sm" id="description" name="description" rows="3">{{ order.description ?? '' }}</textarea>
+                </div>
+
+                <div class="col-md-4">
+                    <label for="amount" class="form-label small fw-bold">Montant (€)</label>
+                    <input type="number" class="form-control form-control-sm" id="amount" name="amount" step="0.01" value="{{ order.amount ?? '' }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="order_date" class="form-label small fw-bold">Date de commande</label>
+                    <input type="date" class="form-control form-control-sm" id="order_date" name="order_date" value="{{ order.order_date ?? 'now'|date('Y-m-d') }}">
+                </div>
+
+                <div class="col-md-4">
+                    <label for="status" class="form-label small fw-bold">Statut</label>
+                    <select class="form-select form-select-sm" id="status" name="status">
+                        <option value="ordered" {% if (order.status ?? 'ordered') == 'ordered' %}selected{% endif %}>Commandée</option>
+                        <option value="received" {% if (order.status ?? '') == 'received' %}selected{% endif %}>Reçue</option>
+                        <option value="invoiced" {% if (order.status ?? '') == 'invoiced' %}selected{% endif %}>Facturée</option>
+                        <option value="cancelled" {% if (order.status ?? '') == 'cancelled' %}selected{% endif %}>Annulée</option>
+                    </select>
+                </div>
+
+                <div class="col-md-12">
+                    <label for="related_project_id" class="form-label small fw-bold">Projet associé</label>
+                    <select class="form-select form-select-sm" id="related_project_id" name="related_project_id">
+                        <option value="">Aucun projet</option>
+                        {% for project in projects %}
+                        <option value="{{ project.id }}" {% if project.id == (order.related_project_id ?? null) %}selected{% endif %}>
+                            {{ project.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-2 border-top border-light d-flex justify-content-between">
+                <div>
+                    {% if is_edit %}
+                        {% if order.archived %}
+                            <button type="button" class="btn btn-sm btn-outline-success" id="unarchive-btn">
+                                <i class="fas fa-undo"></i> Désarchiver
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-warning" id="archive-btn">
+                                <i class="fas fa-archive"></i> Archiver
+                            </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-1" id="delete-btn">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="orders.php" class="btn btn-sm btn-outline-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-success btn-sm px-3 ms-1">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if is_edit %}
+    // Bouton Archiver
+    const archiveBtn = document.getElementById('archive-btn');
+    if (archiveBtn) {
+        archiveBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir archiver cette commande ?')) {
+                return;
+            }
+
+            fetch('orders.php?action=archive&id={{ order.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'orders.php?success=archived';
+                } else {
+                    alert('Erreur lors de l\'archivage');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+
+    // Bouton Désarchiver
+    const unarchiveBtn = document.getElementById('unarchive-btn');
+    if (unarchiveBtn) {
+        unarchiveBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir désarchiver cette commande ?')) {
+                return;
+            }
+
+            fetch('orders.php?action=unarchive&id={{ order.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'orders.php?success=unarchived';
+                } else {
+                    alert('Erreur lors du désarchivage');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+
+    // Bouton Supprimer
+    const deleteBtn = document.getElementById('delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement cette commande ?\n\nCette action est irréversible.')) {
+                return;
+            }
+
+            fetch('orders.php?action=delete&id={{ order.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'orders.php?success=deleted';
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+    {% endif %}
+});
+</script>
+{% endblock %}

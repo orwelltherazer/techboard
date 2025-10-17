@@ -28,3 +28,63 @@
     .main-content { margin-left: 0; padding: 15px; }
     .sidebar { display: none; }
 }
+
+/* Contrats - lignes cliquables */
+.clickable-row {
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+/* Contrats - couleurs de fond selon l'échéance */
+table.table tbody tr.row-expired,
+table.table tbody tr.row-expired td {
+    background-color: #f8d7da !important;
+}
+table.table tbody tr.row-expired:hover,
+table.table tbody tr.row-expired:hover td {
+    background-color: #f1aeb5 !important;
+}
+
+table.table tbody tr.row-critical,
+table.table tbody tr.row-critical td {
+    background-color: #fff3cd !important;
+}
+table.table tbody tr.row-critical:hover,
+table.table tbody tr.row-critical:hover td {
+    background-color: #ffe69c !important;
+}
+
+table.table tbody tr.row-warning,
+table.table tbody tr.row-warning td {
+    background-color: #fff3cd !important;
+}
+table.table tbody tr.row-warning:hover,
+table.table tbody tr.row-warning:hover td {
+    background-color: #ffe69c !important;
+}
+
+table.table tbody tr.row-ok,
+table.table tbody tr.row-ok td {
+    background-color: #d1e7dd !important;
+}
+table.table tbody tr.row-ok:hover,
+table.table tbody tr.row-ok:hover td {
+    background-color: #badbcc !important;
+}
+
+/* Contrats et commandes - boutons et icônes */
+.btn-outline-primary.border-0,
+.btn-outline-warning.border-0,
+.btn-outline-success.border-0,
+.btn-outline-danger.border-0 {
+    border: none !important;
+}
+
+.attachment-icon {
+    cursor: pointer;
+}
+
+.attachment-icon:hover {
+    transform: scale(1.2);
+    transition: transform 0.2s ease;
+}

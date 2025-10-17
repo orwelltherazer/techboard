@@ -6,7 +6,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Gestion des projets</h2>
-    <a href="projects.php?action=add" class="btn btn-primary">Nouveau projet</a>
+    <div>
+        <a href="projects.php?action=add" class="btn btn-primary">Nouveau projet</a>
+        {% if show_archived %}
+        <a href="projects.php" class="btn btn-outline-secondary ms-1">Projets actifs</a>
+        {% else %}
+        <a href="projects.php?archived=1" class="btn btn-outline-secondary ms-1">Archivés</a>
+        {% endif %}
+    </div>
 </div>
 
 {% if success %}
@@ -49,7 +56,6 @@
         <thead class="table-light">
             <tr>
                 <th scope="col">Nom</th>
-                <th scope="col">Objectif</th>
                 <th scope="col">Avancement</th>
                 <th scope="col">Échéance</th>
             </tr>
@@ -60,18 +66,12 @@
                 data-progress="{{ project.progress_percent }}"
                 data-name="{{ project.name|lower }}"
                 data-manager="{{ project.manager_name|lower|default('') }}"
-                onclick="window.location='projects.php?action=view&id={{ project.id }}'">
+                onclick="window.location='projects.php?action=view&id={{ project.id }}'"
+                style="cursor: pointer;">
                 <td>
                     <strong>{{ project.name }}</strong>
                     {% if project.context %}
-                        <div class="text-muted small mt-1">{{ project.context|slice(0, 60) ~ (project.context|length > 60 ? '...' : '') }}</div>
-                    {% endif %}
-                </td>
-                <td>
-                    {% if project.objective %}
-                        {{ project.objective|slice(0, 60) ~ (project.objective|length > 60 ? '...' : '') }}
-                    {% else %}
-                        —
+                        <div class="text-muted small mt-1">{{ project.context|slice(0, 80) ~ (project.context|length > 80 ? '...' : '') }}</div>
                     {% endif %}
                 </td>
                 <td>
@@ -99,21 +99,18 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="4" class="text-center text-muted">Aucun projet trouvé</td>
+                <td colspan="3" class="text-center text-muted">
+                    {% if show_archived %}
+                        Aucun projet archivé
+                    {% else %}
+                        Aucun projet trouvé
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
-
-<style>
-.clickable-row {
-    cursor: pointer;
-}
-.clickable-row:hover {
-    background-color: rgba(0,0,0,.075);
-}
-</style>
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {

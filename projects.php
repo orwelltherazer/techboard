@@ -24,6 +24,29 @@ error_log("POST params: " . print_r($_POST, true));
 // Charger les données communes
 $contacts = $pdo->query("SELECT id, name, company FROM directory ORDER BY name")->fetchAll();
 
+// Traitement des actions POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    switch ($action) {
+        case 'archive':
+            $stmt = $pdo->prepare("UPDATE projects SET archived = 1 WHERE id = ?");
+            $stmt->execute([$project_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'unarchive':
+            $stmt = $pdo->prepare("UPDATE projects SET archived = 0 WHERE id = ?");
+            $stmt->execute([$project_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'delete':
+            $stmt = $pdo->prepare("DELETE FROM projects WHERE id = ?");
+            $stmt->execute([$project_id]);
+            echo json_encode(['success' => true]);
+            exit;
+    }
+}
+
 // === GESTION DES LOGS (AJAX) ===
 if ($action === 'add_log' && $_SERVER['REQUEST_METHOD'] === 'POST' && $project_id) {
     header('Content-Type: application/json');
@@ -212,25 +235,34 @@ if ($action === 'add' || $action === 'edit') {
 }
 
 // === LISTE (par défaut) ===
+$show_archived = $_GET['archived'] ?? 0;
+
 if (isset($_GET['success'])) {
     $action_message = $_GET['success'];
     if ($action_message === 'mise à jour') {
         $success = "Le projet a été mis à jour avec succès.";
     } elseif ($action_message === 'créé') {
         $success = "Le projet a été créé avec succès.";
+    } elseif ($action_message === 'archived') {
+        $success = "Le projet a été archivé avec succès.";
+    } elseif ($action_message === 'unarchived') {
+        $success = "Le projet a été désarchivé avec succès.";
+    } elseif ($action_message === 'deleted') {
+        $success = "Le projet a été supprimé avec succès.";
     }
 }
 
-$stmt = $pdo->query("
-    SELECT 
-        p.id, p.name, p.objective, p.context, p.progress_percent, 
+$stmt = $pdo->prepare("
+    SELECT
+        p.id, p.name, p.objective, p.context, p.progress_percent,
         p.start_date, p.estimated_end_date, p.created_at,
         d.name AS manager_name
     FROM projects p
     LEFT JOIN directory d ON p.manager_id = d.id
-    WHERE p.archived = FALSE
+    WHERE p.archived = ?
     ORDER BY p.estimated_end_date ASC, p.created_at DESC
 ");
+$stmt->execute([$show_archived]);
 $projects = $stmt->fetchAll();
 
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
@@ -239,5 +271,6 @@ $twig = new \Twig\Environment($loader);
 echo $twig->render('projects/list.html.twig', [
     'projects' => $projects,
     'success' => $success,
+    'show_archived' => $show_archived,
     'active_page' => 'projects'
 ]);

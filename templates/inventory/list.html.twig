@@ -6,7 +6,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>Inventaire</h2>
-    <a href="inventory.php?action=add" class="btn btn-primary">Nouvel équipement</a>
+    <div>
+        <a href="inventory.php?action=add" class="btn btn-primary">Nouvel équipement</a>
+        {% if show_archived %}
+        <a href="inventory.php" class="btn btn-outline-secondary ms-1">Équipements actifs</a>
+        {% else %}
+        <a href="inventory.php?archived=1" class="btn btn-outline-secondary ms-1">Archivés</a>
+        {% endif %}
+    </div>
 </div>
 
 {% if success %}
@@ -63,7 +70,7 @@
             <tr>
                 <th scope="col">Désignation</th>
                 <th scope="col">Catégorie</th>
-                <th scope="col">Modèle / Série</th>
+                <th scope="col">Statut</th>
                 <th scope="col">Localisation</th>
                 <th scope="col" class="text-center" style="width: 1px;"></th>
             </tr>
@@ -76,15 +83,24 @@
                 data-label="{{ item.label|lower }}"
                 data-model="{{ (item.model ~ ' ' ~ item.serial_number)|lower }}">
                 <td>
-                    <strong>{{ item.label }}</strong>
-                    {% if item.notes %}
-                        <div class="notes-tooltip" 
-                             data-bs-toggle="tooltip" 
-                             data-bs-placement="top"
-                             title="{{ item.notes|slice(0, 100) ~ (item.notes|length > 100 ? '...' : '') }}">
-                            <small class="text-muted">Notes: {{ item.notes|slice(0, 50) ~ (item.notes|length > 50 ? '...' : '') }}</small>
+                    <div>
+                        <strong>{{ item.label }}</strong>
+                        {% if item.model or item.serial_number %}
+                            <div class="text-muted small mt-1">
+                                {{ item.model|default('') }}{% if item.serial_number %} (SN: {{ item.serial_number }}){% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="item-details mt-2 d-none">
+                        <div class="row small">
+                            <div class="col-md-3"><strong>Technicien :</strong> {{ item.technician_name|default('Non assigné') }}</div>
+                            <div class="col-md-3"><strong>Installé le :</strong> {{ item.installation_date ? item.installation_date|date('d/m/Y') : '—' }}</div>
+                            <div class="col-md-3"><strong>Dernière MAJ :</strong> {{ item.last_status_update ? item.last_status_update|date('d/m/Y') : '—' }}</div>
+                            {% if item.notes %}
+                            <div class="col-md-12 mt-2"><strong>Notes :</strong> {{ item.notes }}</div>
+                            {% endif %}
                         </div>
-                    {% endif %}
+                    </div>
                 </td>
                 <td>
                     {% if item.category == 'workstation' %}Poste de travail
@@ -97,48 +113,78 @@
                     {% else %}Autre{% endif %}
                 </td>
                 <td>
-                    {% if item.model or item.serial_number %}
-                        {{ item.model|default('') }} {% if item.serial_number %}({{ item.serial_number }}){% endif %}
-                    {% else %}
-                        —
-                    {% endif %}
+                    <span class="badge fw-bold
+                        {% if item.status == 'active' %}bg-success
+                        {% elseif item.status == 'broken' %}bg-danger
+                        {% elseif item.status == 'decommissioned' %}bg-secondary
+                        {% else %}bg-warning text-dark{% endif %}">
+                        {% if item.status == 'active' %}En service
+                        {% elseif item.status == 'broken' %}En panne
+                        {% elseif item.status == 'decommissioned' %}Réformé
+                        {% else %}En stock{% endif %}
+                    </span>
                 </td>
                 <td>{{ item.location|default('—') }}</td>
                 <td class="text-center align-middle">
                     <a href="inventory.php?action=edit&id={{ item.id }}" class="btn btn-sm btn-outline-primary border-0">
                         <i class="fas fa-edit"></i>
                     </a>
-                </td>
-            </tr>
-            <tr class="inventory-details d-none">
-                <td colspan="5" class="p-0">
-                    <div class="container-fluid p-3 bg-light">
-                        <div class="row small g-3">
-                            <div class="col-md-4"><strong>Statut:</strong>
-                                <span class="badge
-                                    {% if item.status == 'active' %}bg-success
-                                    {% elseif item.status == 'broken' %}bg-danger
-                                    {% elseif item.status == 'decommissioned' %}bg-secondary
-                                    {% else %}bg-warning text-dark{% endif %}">
-                                    {% if item.status == 'active' %}En service
-                                    {% elseif item.status == 'broken' %}En panne
-                                    {% elseif item.status == 'decommissioned' %}Réformé
-                                    {% else %}En stock{% endif %}
-                                </span>
-                            </div>
-                            <div class="col-md-4"><strong>Installé le:</strong> {{ item.installation_date ? item.installation_date|date('d/m/Y') : '—' }}</div>
-                            <div class="col-md-4"><strong>Technicien:</strong> {{ item.technician_name|default('—') }}</div>
-                        </div>
-                    </div>
+                    {% if show_archived %}
+                    <button class="btn btn-sm btn-outline-success border-0 unarchive-btn"
+                            data-id="{{ item.id }}"
+                            title="Désarchiver">
+                        <i class="fas fa-undo"></i>
+                    </button>
+                    {% else %}
+                    <button class="btn btn-sm btn-outline-warning border-0 action-btn"
+                            data-id="{{ item.id }}"
+                            data-action="archive"
+                            data-title="{{ item.label }}"
+                            title="Archiver">
+                        <i class="fas fa-archive"></i>
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-sm btn-outline-danger border-0 action-btn"
+                            data-id="{{ item.id }}"
+                            data-action="delete"
+                            data-title="{{ item.label }}"
+                            title="Supprimer">
+                        <i class="fas fa-trash-alt"></i>
+                    </button>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="text-center text-muted">Aucun équipement trouvé</td>
+                <td colspan="5" class="text-center text-muted">
+                    {% if show_archived %}
+                        Aucun équipement archivé
+                    {% else %}
+                        Aucun équipement trouvé
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+</div>
+
+{# Modal de confirmation #}
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">Confirmation</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">
+                <!-- Message de confirmation -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="confirmModalAction">Confirmer</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <style>
@@ -148,39 +194,26 @@
 .clickable-row:hover {
     background-color: rgba(0,0,0,.075);
 }
-.btn-outline-primary.border-0 {
+.btn-outline-primary.border-0,
+.btn-outline-warning.border-0,
+.btn-outline-success.border-0,
+.btn-outline-danger.border-0 {
     border: none !important;
-}
-.inventory-details td {
-    border-top: none;
-    padding: 0 !important;
-}
-.notes-tooltip {
-    cursor: help;
 }
 </style>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Activer les tooltips Bootstrap
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.forEach(function(tooltipTriggerEl) {
-        new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-
+document.addEventListener('DOMContentLoaded', function () {
     // Toggle détails équipement au clic sur la ligne
-    document.querySelectorAll('.clickable-row').forEach(function(row) {
+    document.querySelectorAll('.clickable-row').forEach(row => {
         row.addEventListener('click', function (e) {
-            // Ne pas déplier si on clique sur le bouton d'édition
-            if (e.target.closest('.btn-outline-primary')) {
+            // Ne pas déplier si on clique sur un bouton
+            if (e.target.closest('.btn')) {
                 return;
             }
-            
-            // Trouver la ligne de détails suivante
-            const detailsRow = this.nextElementSibling;
-            if (detailsRow && detailsRow.classList.contains('inventory-details')) {
-                detailsRow.classList.toggle('d-none');
-            }
+
+            const details = this.querySelector('.item-details');
+            details.classList.toggle('d-none');
         });
     });
 
@@ -195,7 +228,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const statusValue = statusFilter.value;
         const searchValue = searchInput.value.toLowerCase();
 
-        inventoryRows.forEach(function(row) {
+        inventoryRows.forEach(row => {
             const categoryMatch = !categoryValue || row.dataset.category === categoryValue;
             const statusMatch = !statusValue || row.dataset.status === statusValue;
             const searchMatch = !searchValue ||
@@ -203,20 +236,77 @@ document.addEventListener('DOMContentLoaded', function() {
                 row.dataset.model.includes(searchValue);
 
             row.style.display = (categoryMatch && statusMatch && searchMatch) ? '' : 'none';
-            
-            // Cacher aussi la ligne de détails si la ligne principale est cachée
-            const detailsRow = row.nextElementSibling;
-            if (detailsRow && detailsRow.classList.contains('inventory-details')) {
-                if (row.style.display === 'none') {
-                    detailsRow.style.display = 'none';
-                }
-            }
         });
     }
 
     categoryFilter.addEventListener('change', filterInventory);
     statusFilter.addEventListener('change', filterInventory);
     searchInput.addEventListener('input', filterInventory);
+
+    // Modal de confirmation
+    const confirmModal = new bootstrap.Modal(document.getElementById('confirmModal'));
+    const confirmModalTitle = document.getElementById('confirmModalTitle');
+    const confirmModalBody = document.getElementById('confirmModalBody');
+    const confirmModalAction = document.getElementById('confirmModalAction');
+    let pendingAction = null;
+    let pendingId = null;
+
+    // Gestion des actions avec confirmation
+    document.querySelectorAll('.action-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const action = this.dataset.action;
+            const id = this.dataset.id;
+            const title = this.dataset.title;
+
+            pendingAction = action;
+            pendingId = id;
+
+            if (action === 'archive') {
+                confirmModalTitle.textContent = 'Archiver l\'équipement';
+                confirmModalBody.innerHTML = `Êtes-vous sûr de vouloir archiver l'équipement <strong>"${title}"</strong> ?`;
+                confirmModalAction.className = 'btn btn-warning';
+                confirmModalAction.innerHTML = '<i class="fas fa-archive"></i> Archiver';
+            } else if (action === 'delete') {
+                confirmModalTitle.textContent = 'Supprimer l\'équipement';
+                confirmModalBody.innerHTML = `Êtes-vous sûr de vouloir supprimer définitivement l'équipement <strong>"${title}"</strong> ?<br><span class="text-danger small">Cette action est irréversible.</span>`;
+                confirmModalAction.className = 'btn btn-danger';
+                confirmModalAction.innerHTML = '<i class="fas fa-trash-alt"></i> Supprimer';
+            }
+
+            confirmModal.show();
+        });
+    });
+
+    // Confirmation de l'action
+    confirmModalAction.addEventListener('click', function() {
+        if (pendingAction && pendingId) {
+            sendAction(pendingAction, pendingId);
+            confirmModal.hide();
+        }
+    });
+
+    // Désarchiver sans confirmation
+    document.querySelectorAll('.unarchive-btn').forEach(btn => {
+        btn.addEventListener('click', () => sendAction('unarchive', btn.dataset.id));
+    });
 });
+
+// Fonction pour envoyer l'action
+function sendAction(action, id) {
+    fetch(`inventory.php?action=${action}&id=${id}`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'opération');
+        }
+    })
+    .catch(error => {
+        alert('Erreur de connexion');
+    });
+}
 </script>
 {% endblock %}

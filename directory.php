@@ -14,6 +14,29 @@ $contact_id = $_GET['id'] ?? null;
 $error = null;
 $success = null;
 
+// Traitement des actions POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    switch ($action) {
+        case 'archive':
+            $stmt = $pdo->prepare("UPDATE directory SET archived = 1 WHERE id = ?");
+            $stmt->execute([$contact_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'unarchive':
+            $stmt = $pdo->prepare("UPDATE directory SET archived = 0 WHERE id = ?");
+            $stmt->execute([$contact_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'delete':
+            $stmt = $pdo->prepare("DELETE FROM directory WHERE id = ?");
+            $stmt->execute([$contact_id]);
+            echo json_encode(['success' => true]);
+            exit;
+    }
+}
+
 if ($action === 'add' || $action === 'edit') {
     if ($action === 'edit' && $contact_id) {
         $stmt = $pdo->prepare("SELECT * FROM directory WHERE id = ?");
@@ -89,6 +112,8 @@ if ($action === 'add' || $action === 'edit') {
 }
 
 // Action: list (par défaut)
+$show_archived = $_GET['archived'] ?? 0;
+
 if (isset($_GET['success'])) {
     $action_message = $_GET['success'];
     if ($action_message === 'mis à jour') {
@@ -98,10 +123,12 @@ if (isset($_GET['success'])) {
     }
 }
 
-$stmt = $pdo->query("
-    SELECT * FROM directory 
+$stmt = $pdo->prepare("
+    SELECT * FROM directory
+    WHERE archived = ?
     ORDER BY contact_type, name
 ");
+$stmt->execute([$show_archived]);
 $contacts = $stmt->fetchAll();
 
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
@@ -110,5 +137,7 @@ $twig = new \Twig\Environment($loader);
 echo $twig->render('directory/list.html.twig', [
     'contacts' => $contacts,
     'success' => $success,
+    'show_archived' => $show_archived,
     'active_page' => 'directory'
 ]);
+?>

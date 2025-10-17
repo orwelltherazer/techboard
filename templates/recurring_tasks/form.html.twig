@@ -1,0 +1,117 @@
+{# templates/recurring_tasks/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ task ? 'Modifier' : 'Nouvelle' }} tâche récurrente{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">{{ task ? 'Modifier' : 'Nouvelle' }} tâche récurrente</h2>
+    <a href="recurring_tasks.php" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+<div class="card border-0 shadow-sm" style="background-color: #fafafa;">
+    <div class="card-body p-3">
+        <form method="POST" action="recurring_tasks.php?action={{ task ? 'edit&id=' ~ task.id : 'add' }}">
+            <div class="row g-2">
+                <div class="col-md-8">
+                    <label for="title" class="form-label small fw-bold">Titre *</label>
+                    <input type="text" class="form-control form-control-sm" id="title" name="title"
+                           value="{{ task.title ?? '' }}" required>
+                </div>
+                <div class="col-md-4">
+                    <label for="category" class="form-label small fw-bold">Catégorie *</label>
+                    <select class="form-select form-select-sm" id="category" name="category" required>
+                        {% for key, label in categories %}
+                            <option value="{{ key }}" {% if task and task.category == key %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <label for="description" class="form-label small fw-bold">Description</label>
+                    <textarea class="form-control form-control-sm" id="description" name="description" rows="2">{{ task.description ?? '' }}</textarea>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="recurrence_pattern" class="form-label small fw-bold">Récurrence *</label>
+                    <select class="form-select form-select-sm" id="recurrence_pattern" name="recurrence_pattern" required>
+                        {% for key, label in patterns %}
+                            <option value="{{ key }}" {% if task and task.recurrence_pattern == key %}selected{% endif %}>
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="recurrence_interval" class="form-label small fw-bold">Intervalle</label>
+                    <input type="number" class="form-control form-control-sm" id="recurrence_interval" name="recurrence_interval"
+                           min="1" max="99" value="{{ task.recurrence_interval ?? 1 }}">
+                    <small class="text-muted small">Ex: 2 = tous les 2 jours/semaines/mois/ans</small>
+                </div>
+
+                <div class="col-md-6" id="day_of_week_field" style="display:none;">
+                    <label for="due_day_of_week" class="form-label small fw-bold">Jour de la semaine</label>
+                    <select class="form-select form-select-sm" id="due_day_of_week" name="due_day_of_week">
+                        <option value="">—</option>
+                        {% for i in 1..7 %}
+                            {% set day = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i - 1] %}
+                            <option value="{{ i }}" {% if task and task.due_day_of_week == i %}selected{% endif %}>{{ day }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6" id="day_of_month_field" style="display:none;">
+                    <label for="due_day_of_month" class="form-label small fw-bold">Jour du mois</label>
+                    <input type="number" class="form-control form-control-sm" id="due_day_of_month" name="due_day_of_month"
+                           value="{{ task.due_day_of_month ?? '' }}" placeholder="1 à 31">
+                    <small class="text-muted small">Entre 1 et 31</small>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-2 border-top border-light text-end">
+                <a href="recurring_tasks.php" class="btn btn-sm btn-outline-secondary">Annuler</a>
+                <button type="submit" class="btn btn-success btn-sm px-3 ms-1">
+                    <i class="fas fa-save"></i> Enregistrer
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const pattern = document.getElementById('recurrence_pattern');
+    const weeklyField = document.getElementById('day_of_week_field');
+    const monthlyField = document.getElementById('day_of_month_field');
+    const dayOfWeekSelect = document.getElementById('due_day_of_week');
+    const dayOfMonthInput = document.getElementById('due_day_of_month');
+
+    const toggleFields = () => {
+        if (pattern.value === 'weekly') {
+            weeklyField.style.display = 'block';
+            dayOfWeekSelect.disabled = false;
+            monthlyField.style.display = 'none';
+            dayOfMonthInput.disabled = true;
+        } else if (pattern.value === 'monthly') {
+            monthlyField.style.display = 'block';
+            dayOfMonthInput.disabled = false;
+            weeklyField.style.display = 'none';
+            dayOfWeekSelect.disabled = true;
+        } else {
+            weeklyField.style.display = 'none';
+            monthlyField.style.display = 'none';
+            dayOfWeekSelect.disabled = true;
+            dayOfMonthInput.disabled = true;
+        }
+    };
+
+    pattern.addEventListener('change', toggleFields);
+    toggleFields(); // Initialisation au chargement
+});
+</script>
+{% endblock %}

@@ -1,0 +1,234 @@
+{# templates/contracts/list.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - Contrats{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>Gestion des contrats</h2>
+    <div>
+        <a href="contracts.php?action=add" class="btn btn-primary">Nouveau contrat</a>
+        {% if show_archived %}
+        <a href="contracts.php" class="btn btn-outline-secondary ms-1">Contrats actifs</a>
+        {% else %}
+        <a href="contracts.php?archived=1" class="btn btn-outline-secondary ms-1">Archivés</a>
+        {% endif %}
+    </div>
+</div>
+
+{% if success %}
+<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+    {{ success }}
+    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+<script>
+    setTimeout(function() {
+        var alert = document.getElementById('success-alert');
+        if (alert) {
+            alert.classList.remove('show');
+            setTimeout(function() {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 150);
+        }
+    }, 3000);
+</script>
+{% endif %}
+
+{# Filtres #}
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="filter-type">
+            <option value="">Tous les types</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="license">Licence</option>
+            <option value="service">Service</option>
+            <option value="lease">Location</option>
+            <option value="other">Autre</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <input type="text" class="form-control" id="search-contracts" placeholder="Rechercher...">
+    </div>
+</div>
+
+{# Liste des contrats #}
+<div class="table-responsive">
+    <table class="table table-hover align-middle">
+        <thead class="table-light">
+            <tr>
+                <th scope="col">Contrat</th>
+                <th scope="col">Type</th>
+                <th scope="col">Fournisseur</th>
+                <th scope="col">Échéance</th>
+                <th scope="col" class="text-center" style="width: 1px;"></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts %}
+                {% set now = 'now'|date('Y-m-d') %}
+                {% set days_until_end = contract.end_date ? ((contract.end_date|date('U')) - (now|date('U'))) / 86400 : null %}
+                {% set is_expired = days_until_end is not null and days_until_end < 0 %}
+                {% set is_critical = days_until_end is not null and days_until_end >= 0 and days_until_end <= 30 %}
+                {% set is_warning = days_until_end is not null and days_until_end > 30 and days_until_end <= 90 %}
+
+                <tr class="contract-row clickable-row
+                    {% if is_expired %}row-expired
+                    {% elseif is_critical %}row-critical
+                    {% elseif is_warning %}row-warning
+                    {% else %}row-ok{% endif %}"
+                    data-type="{{ contract.contract_type }}"
+                    data-name="{{ contract.name|lower }}"
+                    data-vendor="{{ contract.vendor_name|lower|default('') }}"
+                    data-contract-id="{{ contract.id }}">
+                    <td>
+                        <div>
+                            <strong>{{ contract.name }}</strong>
+                            {% if contract.auto_renew %}
+                                <i class="fas fa-sync-alt text-info ms-2" title="Renouvellement automatique"></i>
+                            {% endif %}
+                            {% if contract.attachments_count > 0 %}
+                                <i class="fas fa-paperclip text-success ms-2 attachment-icon"
+                                   data-contract-id="{{ contract.id }}"
+                                   title="Cliquer pour visualiser la pièce jointe"></i>
+                            {% endif %}
+                            {% if contract.notes %}
+                                <div class="small text-muted mt-1">{{ contract.notes|length > 80 ? contract.notes|slice(0, 80) ~ '...' : contract.notes }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="contract-details mt-2 d-none">
+                            <div class="row small g-2">
+                                <div class="col-md-4">
+                                    <strong><i class="fas fa-calendar-plus me-1"></i>Début:</strong>
+                                    {{ contract.start_date ? contract.start_date|date('d/m/Y') : '—' }}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong><i class="fas fa-calendar-times me-1"></i>Fin:</strong>
+                                    {{ contract.end_date ? contract.end_date|date('d/m/Y') : '—' }}
+                                </div>
+                                <div class="col-md-4">
+                                    <strong><i class="fas fa-sync-alt me-1"></i>Renouvellement auto:</strong>
+                                    {{ contract.auto_renew ? 'Oui' : 'Non' }}
+                                </div>
+                                {% if contract.notes %}
+                                <div class="col-md-12 mt-2">
+                                    <strong><i class="fas fa-sticky-note me-1"></i>Notes:</strong>
+                                    <div class="text-muted">{{ contract.notes }}</div>
+                                </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <span class="badge bg-secondary">
+                            {% if contract.contract_type == 'maintenance' %}Maintenance
+                            {% elseif contract.contract_type == 'license' %}Licence
+                            {% elseif contract.contract_type == 'service' %}Service
+                            {% elseif contract.contract_type == 'lease' %}Location
+                            {% else %}Autre{% endif %}
+                        </span>
+                    </td>
+                    <td>{{ contract.vendor_name|default('—') }}</td>
+                    <td>
+                        {% if contract.end_date %}
+                            <div class="d-flex align-items-center">
+                                <span class="me-2">{{ contract.end_date|date('d/m/Y') }}</span>
+                                {% if is_expired %}
+                                    <span class="badge bg-danger">Expiré</span>
+                                {% elseif is_critical %}
+                                    <span class="badge bg-danger">J-{{ days_until_end|round }}</span>
+                                {% elseif is_warning %}
+                                    <span class="badge bg-warning text-dark">J-{{ days_until_end|round }}</span>
+                                {% else %}
+                                    <span class="badge bg-success">J-{{ days_until_end|round }}</span>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <span class="text-muted">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center align-middle">
+                        <a href="contracts.php?action=edit&id={{ contract.id }}" class="btn btn-sm btn-outline-primary border-0">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="5" class="text-center text-muted">
+                        {% if show_archived %}
+                            Aucun contrat archivé
+                        {% else %}
+                            Aucun contrat trouvé
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Toggle détails contrat au clic sur la ligne
+    document.querySelectorAll('.clickable-row').forEach(row => {
+        row.addEventListener('click', function (e) {
+            // Ne pas déplier si on clique sur le bouton modifier ou le trombone
+            if (e.target.closest('.btn') || e.target.classList.contains('attachment-icon')) {
+                return;
+            }
+
+            const details = this.querySelector('.contract-details');
+            details.classList.toggle('d-none');
+        });
+    });
+
+    // Clic sur le trombone pour visualiser la pièce jointe
+    document.querySelectorAll('.attachment-icon').forEach(icon => {
+        icon.addEventListener('click', function(e) {
+            e.stopPropagation(); // Empêcher le toggle des détails
+
+            const contractId = this.dataset.contractId;
+
+            // Récupérer l'ID de la pièce jointe via AJAX
+            fetch(`get_attachment.php?contract_id=${contractId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.attachment_id) {
+                        // Ouvrir la pièce jointe dans un nouvel onglet
+                        window.open(`download.php?id=${data.attachment_id}&action=view`, '_blank');
+                    } else {
+                        alert('Aucune pièce jointe trouvée');
+                    }
+                })
+                .catch(error => {
+                    alert('Erreur lors de la récupération de la pièce jointe');
+                });
+        });
+    });
+
+    // Filtrage
+    const typeFilter = document.getElementById('filter-type');
+    const searchInput = document.getElementById('search-contracts');
+    const contractRows = document.querySelectorAll('.contract-row');
+
+    function filterContracts() {
+        const typeValue = typeFilter.value;
+        const searchValue = searchInput.value.toLowerCase();
+
+        contractRows.forEach(row => {
+            const typeMatch = !typeValue || row.dataset.type === typeValue;
+            const searchMatch = !searchValue ||
+                row.dataset.name.includes(searchValue) ||
+                row.dataset.vendor.includes(searchValue);
+
+            row.style.display = (typeMatch && searchMatch) ? '' : 'none';
+        });
+    }
+
+    typeFilter.addEventListener('change', filterContracts);
+    searchInput.addEventListener('input', filterContracts);
+});
+</script>
+{% endblock %}

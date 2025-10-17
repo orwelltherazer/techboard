@@ -1,0 +1,332 @@
+{# templates/contracts/form.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ is_edit ? 'Modifier' : 'Nouveau' }} contrat{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="h4 mb-0">{{ is_edit ? 'Modifier le contrat' : 'Nouveau contrat' }}</h2>
+    <a href="contracts.php" class="btn btn-sm btn-outline-secondary">
+        <i class="fas fa-arrow-left"></i> Retour
+    </a>
+</div>
+
+{% if error %}
+<div class="alert alert-danger">{{ error }}</div>
+{% endif %}
+
+<div class="card border-0 shadow-sm" style="background-color: #fafafa;">
+    <div class="card-body p-3">
+        <form method="POST">
+            <div class="row g-2">
+                <div class="col-md-6">
+                    <label for="name" class="form-label small fw-bold">Nom du contrat *</label>
+                    <input type="text" class="form-control form-control-sm" id="name" name="name" value="{{ contract.name ?? '' }}" required>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="contract_type" class="form-label small fw-bold">Type de contrat</label>
+                    <select class="form-select form-select-sm" id="contract_type" name="contract_type">
+                        <option value="maintenance" {% if (contract.contract_type ?? '') == 'maintenance' %}selected{% endif %}>Maintenance</option>
+                        <option value="license" {% if (contract.contract_type ?? '') == 'license' %}selected{% endif %}>Licence</option>
+                        <option value="service" {% if (contract.contract_type ?? '') == 'service' %}selected{% endif %}>Service</option>
+                        <option value="lease" {% if (contract.contract_type ?? '') == 'lease' %}selected{% endif %}>Location</option>
+                        <option value="other" {% if (contract.contract_type ?? '') == 'other' %}selected{% endif %}>Autre</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="vendor_id" class="form-label small fw-bold">Fournisseur</label>
+                    <select class="form-select form-select-sm" id="vendor_id" name="vendor_id">
+                        <option value="">Non spécifié</option>
+                        {% for contact in contacts %}
+                        <option value="{{ contact.id }}" {% if contact.id == (contract.vendor_id ?? null) %}selected{% endif %}>
+                            {{ contact.name }}{% if contact.company %} ({{ contact.company }}){% endif %}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label for="start_date" class="form-label small fw-bold">Date de début</label>
+                    <input type="date" class="form-control form-control-sm" id="start_date" name="start_date" value="{{ contract.start_date ?? '' }}">
+                </div>
+
+                <div class="col-md-6">
+                    <label for="end_date" class="form-label small fw-bold">Date de fin / Échéance</label>
+                    <input type="date" class="form-control form-control-sm" id="end_date" name="end_date" value="{{ contract.end_date ?? '' }}">
+                </div>
+
+                <div class="col-md-12">
+                    <div class="form-check mt-2">
+                        <input class="form-check-input" type="checkbox" id="auto_renew" name="auto_renew" {% if contract.auto_renew ?? false %}checked{% endif %}>
+                        <label class="form-check-label small" for="auto_renew">
+                            <i class="fas fa-sync-alt"></i> Renouvellement automatique
+                        </label>
+                    </div>
+                </div>
+
+                <div class="col-md-12">
+                    <label for="notes" class="form-label small fw-bold">Notes</label>
+                    <textarea class="form-control form-control-sm" id="notes" name="notes" rows="3">{{ contract.notes ?? '' }}</textarea>
+                </div>
+            </div>
+
+            <div class="mt-3 pt-2 border-top border-light d-flex justify-content-between">
+                <div>
+                    {% if is_edit %}
+                        {% if contract.archived %}
+                            <button type="button" class="btn btn-sm btn-outline-success" id="unarchive-btn">
+                                <i class="fas fa-undo"></i> Désarchiver
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-sm btn-outline-warning" id="archive-btn">
+                                <i class="fas fa-archive"></i> Archiver
+                            </button>
+                        {% endif %}
+                        <button type="button" class="btn btn-sm btn-outline-danger ms-1" id="delete-btn">
+                            <i class="fas fa-trash"></i> Supprimer
+                        </button>
+                    {% endif %}
+                </div>
+                <div>
+                    <a href="contracts.php" class="btn btn-sm btn-outline-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-success btn-sm px-3 ms-1">
+                        <i class="fas fa-save"></i> Enregistrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if is_edit %}
+{# Section pièces jointes #}
+<div class="card border-0 shadow-sm mt-3" style="background-color: #fafafa;">
+    <div class="card-body p-3">
+        <h5 class="mb-3"><i class="fas fa-paperclip me-2"></i>Pièces jointes</h5>
+
+        {# Une seule pièce jointe possible #}
+        {% if attachments|length > 0 %}
+        <div class="mb-3">
+            {% set attachment = attachments[0] %}
+            <div class="attachment-item d-flex justify-content-between align-items-center p-3 border rounded bg-white">
+                <div class="d-flex align-items-center">
+                    <i class="fas fa-file-pdf text-danger me-3 fa-3x"></i>
+                    <div>
+                        <strong>{{ attachment.original_filename }}</strong>
+                        <div class="text-muted small">
+                            {{ (attachment.file_size / 1024)|round(2) }} KB •
+                            {{ attachment.uploaded_at|date('d/m/Y H:i') }}
+                        </div>
+                    </div>
+                </div>
+                <div>
+                    <a href="download.php?id={{ attachment.id }}&action=view" target="_blank" class="btn btn-sm btn-outline-primary" title="Visualiser">
+                        <i class="fas fa-eye"></i> Visualiser
+                    </a>
+                    <a href="download.php?id={{ attachment.id }}&action=download" class="btn btn-sm btn-outline-success" title="Télécharger">
+                        <i class="fas fa-download"></i> Télécharger
+                    </a>
+                    <button class="btn btn-sm btn-outline-danger delete-attachment-btn" data-id="{{ attachment.id }}" title="Supprimer">
+                        <i class="fas fa-trash"></i> Supprimer
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <p class="text-muted small mb-3">Aucune pièce jointe pour le moment.</p>
+        {% endif %}
+
+        {# Formulaire d'upload - affiché seulement s'il n'y a pas de pièce jointe #}
+        {% if attachments|length == 0 %}
+        <div class="border-top pt-3" id="upload-section">
+            <form id="upload-form" enctype="multipart/form-data">
+                <div class="row g-2">
+                    <div class="col-md-8">
+                        <input type="file" class="form-control form-control-sm" id="file-input" name="file" accept=".pdf,.doc,.docx,.xls,.xlsx,.txt,.jpg,.jpeg,.png,.gif" required>
+                        <small class="text-muted">Formats acceptés : PDF, DOC, DOCX, XLS, XLSX, TXT, JPG, PNG, GIF (max 10 MB)</small>
+                    </div>
+                    <div class="col-md-4">
+                        <button type="submit" class="btn btn-primary btn-sm w-100" id="upload-btn">
+                            <i class="fas fa-upload me-1"></i> Uploader
+                        </button>
+                    </div>
+                </div>
+                <div id="upload-progress" class="mt-2 d-none">
+                    <div class="progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div id="upload-message" class="mt-2"></div>
+            </form>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    {% if is_edit %}
+    // Bouton Archiver
+    const archiveBtn = document.getElementById('archive-btn');
+    if (archiveBtn) {
+        archiveBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir archiver ce contrat ?')) {
+                return;
+            }
+
+            fetch('contracts.php?action=archive&id={{ contract.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'contracts.php?success=archived';
+                } else {
+                    alert('Erreur lors de l\'archivage');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+
+    // Bouton Désarchiver
+    const unarchiveBtn = document.getElementById('unarchive-btn');
+    if (unarchiveBtn) {
+        unarchiveBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir désarchiver ce contrat ?')) {
+                return;
+            }
+
+            fetch('contracts.php?action=unarchive&id={{ contract.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'contracts.php?success=unarchived';
+                } else {
+                    alert('Erreur lors du désarchivage');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+
+    // Bouton Supprimer
+    const deleteBtn = document.getElementById('delete-btn');
+    if (deleteBtn) {
+        deleteBtn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer définitivement ce contrat ?\n\nCette action est irréversible.')) {
+                return;
+            }
+
+            fetch('contracts.php?action=delete&id={{ contract.id }}', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = 'contracts.php?success=deleted';
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    }
+    {% endif %}
+
+    // Upload de fichier
+    const uploadForm = document.getElementById('upload-form');
+    if (uploadForm) {
+        const uploadBtn = document.getElementById('upload-btn');
+        const uploadProgress = document.getElementById('upload-progress');
+        const uploadMessage = document.getElementById('upload-message');
+
+        uploadForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const fileInput = document.getElementById('file-input');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                uploadMessage.innerHTML = '<div class="alert alert-warning alert-sm">Veuillez sélectionner un fichier</div>';
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('entity_type', 'contract');
+            formData.append('entity_id', '{{ contract.id }}');
+
+            uploadBtn.disabled = true;
+            uploadProgress.classList.remove('d-none');
+            uploadMessage.innerHTML = '';
+
+            fetch('upload.php', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                uploadBtn.disabled = false;
+                uploadProgress.classList.add('d-none');
+
+                if (data.success) {
+                    uploadMessage.innerHTML = '<div class="alert alert-success alert-sm">Fichier uploadé avec succès !</div>';
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1000);
+                } else {
+                    uploadMessage.innerHTML = '<div class="alert alert-danger alert-sm">' + data.error + '</div>';
+                }
+            })
+            .catch(error => {
+                uploadBtn.disabled = false;
+                uploadProgress.classList.add('d-none');
+                uploadMessage.innerHTML = '<div class="alert alert-danger alert-sm">Erreur lors de l\'upload</div>';
+            });
+        });
+    }
+
+    // Suppression de pièce jointe
+    document.querySelectorAll('.delete-attachment-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette pièce jointe ?')) {
+                return;
+            }
+
+            const attachmentId = this.dataset.id;
+
+            fetch('delete_attachment.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: 'id=' + attachmentId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            })
+            .catch(error => {
+                alert('Erreur de connexion');
+            });
+        });
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

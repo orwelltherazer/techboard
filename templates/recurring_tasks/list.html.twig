@@ -1,48 +1,40 @@
-{# templates/tasks/list.html.twig #}
+{# templates/recurring_tasks/list.html.twig #}
 {% extends 'base.html.twig' %}
 
-{% block title %}TechBoard - Tâches{% endblock %}
+{% block title %}TechBoard - Tâches récurrentes{% endblock %}
 
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>Gestion des tâches</h2>
+    <h2>Tâches récurrentes</h2>
     <div>
-        <a href="tasks.php?action=add" class="btn btn-primary">Nouvelle tâche</a>
+        <a href="recurring_tasks.php?action=add" class="btn btn-primary">Nouvelle tâche</a>
         {% if show_archived %}
-        <a href="tasks.php" class="btn btn-outline-secondary ms-1">Tâches actives</a>
+        <a href="recurring_tasks.php" class="btn btn-outline-secondary ms-1">Tâches actives</a>
         {% else %}
-        <a href="tasks.php?archived=1" class="btn btn-outline-secondary ms-1">Archivées</a>
+        <a href="recurring_tasks.php?archived=1" class="btn btn-outline-secondary ms-1">Archivées</a>
         {% endif %}
     </div>
 </div>
 
-{% if success %}
-<div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
-    {{ success }}
-    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-</div>
-<script>
-    setTimeout(function() {
-        var alert = document.getElementById('success-alert');
-        if (alert) {
-            alert.classList.remove('show');
-            setTimeout(function() {
-                if (alert.parentNode) {
-                    alert.parentNode.removeChild(alert);
-                }
-            }, 150);
-        }
-    }, 3000);
-</script>
-{% endif %}
-
 <div class="row mb-3">
     <div class="col-md-3">
-        <select class="form-select" id="filter-status">
-            <option value="">Tous les statuts</option>
-            <option value="not_started">A faire</option>
-            <option value="in_progress">En cours</option>
-            <option value="completed">Terminée</option>
+        <select class="form-select" id="filter-category">
+            <option value="">Toutes les catégories</option>
+            <option value="it">Informatique</option>
+            <option value="maintenance">Maintenance</option>
+            <option value="communication">Communication</option>
+            <option value="security">Sécurité</option>
+            <option value="network">Réseau</option>
+            <option value="other">Autre</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="filter-pattern">
+            <option value="">Toutes les récurrences</option>
+            <option value="daily">Quotidien</option>
+            <option value="weekly">Hebdomadaire</option>
+            <option value="monthly">Mensuel</option>
+            <option value="yearly">Annuel</option>
         </select>
     </div>
     <div class="col-md-3">
@@ -55,77 +47,77 @@
         <thead class="table-light">
             <tr>
                 <th scope="col">Titre</th>
-                <th scope="col">Statut</th>
-                <th scope="col">Avancement</th>
-                <th scope="col">Échéance</th>
+                <th scope="col">Catégorie</th>
+                <th scope="col">Récurrence</th>
                 <th scope="col" class="text-center" style="width: 1px;"></th>
             </tr>
         </thead>
         <tbody id="tasks-table-body">
             {% for task in tasks %}
             <tr class="task-row clickable-row"
-                data-status="{{ task.status }}"
+                data-category="{{ task.category }}"
+                data-pattern="{{ task.recurrence_pattern }}"
                 data-title="{{ task.title|lower }}"
-                data-project="{{ task.project_name|lower|default('') }}"
-                data-assignee="{{ task.assignee_name|lower|default('') }}">
+                data-description="{{ task.description|lower|default('') }}">
                 <td>
                     <div>
                         <strong>{{ task.title }}</strong>
                         {% if task.description %}
-                            <div class="text-muted small mt-1">{{ task.description|slice(0, 60) ~ (task.description|length > 60 ? '...' : '') }}</div>
+                            <div class="text-muted small mt-1">{{ task.description|slice(0, 80) ~ (task.description|length > 80 ? '...' : '') }}</div>
                         {% endif %}
                     </div>
                     <div class="task-details mt-2 d-none">
                         <div class="row small">
-                            <div class="col-md-3"><strong>Projet :</strong> {{ task.project_name|default('—') }}</div>
-                            <div class="col-md-3"><strong>Assigné à :</strong> {{ task.assignee_name|default('Non assigné') }}</div>
-                            <div class="col-md-3">
-                                <strong>Catégorie:</strong> 
-                                {% if task.category == 'it' %}Informatique
-                                {% elseif task.category == 'maintenance' %}Maintenance
-                                {% elseif task.category == 'communication' %}Communication
-                                {% elseif task.category == 'security' %}Sécurité
-                                {% elseif task.category == 'network' %}Réseau
-                                {% else %}Autre{% endif %}
+                            <div class="col-md-12">
+                                <strong>Description complète :</strong>
+                                <div class="mt-1">{{ task.description|default('—')|nl2br }}</div>
                             </div>
-                            <div class="col-md-3"><strong>Créée le:</strong> {{ task.created_at|date('d/m/Y') }}</div>
                         </div>
                     </div>
                 </td>
                 <td>
                     <span class="badge fw-bold
-                        {% if task.status == 'not_started' %}bg-secondary
-                        {% elseif task.status == 'in_progress' %}bg-warning text-dark
-                        {% else %}bg-success{% endif %}">
-                        {% if task.status == 'not_started' %}A faire
-                        {% elseif task.status == 'in_progress' %}En cours
-                        {% else %}Fini{% endif %}
+                        {% if task.category == 'it' %}bg-primary
+                        {% elseif task.category == 'maintenance' %}bg-warning text-dark
+                        {% elseif task.category == 'communication' %}bg-info
+                        {% elseif task.category == 'security' %}bg-danger
+                        {% elseif task.category == 'network' %}bg-success
+                        {% else %}bg-secondary{% endif %}">
+                        {% if task.category == 'it' %}Informatique
+                        {% elseif task.category == 'maintenance' %}Maintenance
+                        {% elseif task.category == 'communication' %}Communication
+                        {% elseif task.category == 'security' %}Sécurité
+                        {% elseif task.category == 'network' %}Réseau
+                        {% else %}Autre{% endif %}
                     </span>
                 </td>
-                <td class="text-center align-middle">
-                    <div class="progress" style="height: 6px; width: 80px;">
-                        <div class="progress-bar
-                            {% if task.progress_percent < 30 %}bg-danger
-                            {% elseif task.progress_percent < 70 %}bg-warning
-                            {% else %}bg-success{% endif %}"
-                            role="progressbar"
-                            style="width: {{ task.progress_percent }}%">
-                        </div>
-                    </div>
-                    <small class="text-muted">{{ task.progress_percent }}%</small>
-                </td>
-                <td class="text-center align-middle">
-                    {% if task.due_date %}
-                        {{ task.due_date|date('d/m/Y') }}
-                        {% if task.due_date < 'now'|date('Y-m-d') and task.status != 'completed' %}
-                            <i class="fas fa-exclamation-circle text-danger ms-1" title="En retard"></i>
+                <td>
+                    <div>
+                        <strong>
+                            {% if task.recurrence_pattern == 'daily' %}Quotidien
+                            {% elseif task.recurrence_pattern == 'weekly' %}Hebdomadaire
+                            {% elseif task.recurrence_pattern == 'monthly' %}Mensuel
+                            {% else %}Annuel{% endif %}
+                        </strong>
+                        {% if task.recurrence_interval > 1 %}
+                            <span class="text-muted small">
+                                (tous les {{ task.recurrence_interval }}
+                                {% if task.recurrence_pattern == 'daily' %}jours
+                                {% elseif task.recurrence_pattern == 'weekly' %}semaines
+                                {% elseif task.recurrence_pattern == 'monthly' %}mois
+                                {% else %}ans{% endif %})
+                            </span>
                         {% endif %}
-                    {% else %}
-                        —
+                    </div>
+                    {% if task.recurrence_pattern == 'weekly' and task.due_day_of_week %}
+                        {% set days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'] %}
+                        <div class="text-muted small">→ {{ days[task.due_day_of_week - 1] }}</div>
+                    {% elseif task.recurrence_pattern == 'monthly' and task.due_day_of_month %}
+                        <div class="text-muted small">→ Le {{ task.due_day_of_month }} du mois</div>
                     {% endif %}
                 </td>
                 <td class="text-center align-middle">
-                    <a href="tasks.php?action=edit&id={{ task.id }}" class="btn btn-sm btn-outline-primary border-0">
+                    <a href="recurring_tasks.php?action=edit&id={{ task.id }}" class="btn btn-sm btn-outline-primary border-0">
                         <i class="fas fa-edit"></i>
                     </a>
                     {% if show_archived %}
@@ -154,11 +146,11 @@
             </tr>
             {% else %}
             <tr>
-                <td colspan="5" class="text-center text-muted">
+                <td colspan="4" class="text-center text-muted">
                     {% if show_archived %}
                         Aucune tâche archivée
                     {% else %}
-                        Aucune tâche trouvée
+                        Aucune tâche récurrente trouvée
                     {% endif %}
                 </td>
             </tr>
@@ -212,31 +204,36 @@ document.addEventListener('DOMContentLoaded', function () {
             }
             
             const details = this.querySelector('.task-details');
-            details.classList.toggle('d-none');
+            if (details) {
+                details.classList.toggle('d-none');
+            }
         });
     });
 
     // Filtrage
-    const statusFilter = document.getElementById('filter-status');
+    const categoryFilter = document.getElementById('filter-category');
+    const patternFilter = document.getElementById('filter-pattern');
     const searchInput = document.getElementById('search-tasks');
     const taskRows = document.querySelectorAll('.task-row');
 
     function filterTasks() {
-        const statusValue = statusFilter.value;
+        const categoryValue = categoryFilter.value;
+        const patternValue = patternFilter.value;
         const searchValue = searchInput.value.toLowerCase();
 
         taskRows.forEach(row => {
-            const statusMatch = !statusValue || row.dataset.status === statusValue;
-            const titleMatch = !searchValue ||
+            const categoryMatch = !categoryValue || row.dataset.category === categoryValue;
+            const patternMatch = !patternValue || row.dataset.pattern === patternValue;
+            const searchMatch = !searchValue ||
                 row.dataset.title.includes(searchValue) ||
-                row.dataset.project.includes(searchValue) ||
-                row.dataset.assignee.includes(searchValue);
+                row.dataset.description.includes(searchValue);
 
-            row.style.display = (statusMatch && titleMatch) ? '' : 'none';
+            row.style.display = (categoryMatch && patternMatch && searchMatch) ? '' : 'none';
         });
     }
 
-    statusFilter.addEventListener('change', filterTasks);
+    categoryFilter.addEventListener('change', filterTasks);
+    patternFilter.addEventListener('change', filterTasks);
     searchInput.addEventListener('input', filterTasks);
 
     // Modal de confirmation
@@ -289,7 +286,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 // Fonction pour envoyer l'action
 function sendAction(action, id) {
-    fetch(`tasks.php?action=${action}&id=${id}`, {
+    fetch(`recurring_tasks.php?action=${action}&id=${id}`, {
         method: 'POST'
     })
     .then(response => response.json())

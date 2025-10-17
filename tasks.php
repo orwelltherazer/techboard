@@ -1,5 +1,5 @@
 <?php
-// public/tasks.php (modifié pour gérer les messages de succès spécifiques)
+// public/tasks.php
 require_once __DIR__ . '/config/config.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
@@ -17,6 +17,29 @@ $success = null;
 // Charger les données communes
 $projects = $pdo->query("SELECT id, name FROM projects ORDER BY name")->fetchAll();
 $contacts = $pdo->query("SELECT id, name, company FROM directory ORDER BY name")->fetchAll();
+
+// Traitement des actions POST
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    switch ($action) {
+        case 'archive':
+            $stmt = $pdo->prepare("UPDATE tasks SET archived = 1 WHERE id = ?");
+            $stmt->execute([$task_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'unarchive':
+            $stmt = $pdo->prepare("UPDATE tasks SET archived = 0 WHERE id = ?");
+            $stmt->execute([$task_id]);
+            echo json_encode(['success' => true]);
+            exit;
+
+        case 'delete':
+            $stmt = $pdo->prepare("DELETE FROM tasks WHERE id = ?");
+            $stmt->execute([$task_id]);
+            echo json_encode(['success' => true]);
+            exit;
+    }
+}
 
 if ($action === 'add' || $action === 'edit') {
     if ($action === 'edit' && $task_id) {
@@ -44,7 +67,7 @@ if ($action === 'add' || $action === 'edit') {
                 $stmt = $pdo->prepare("
                     UPDATE tasks 
                     SET title = ?, description = ?, category = ?, status = ?, progress_percent = ?, 
-                        assignee_id = ?, project_id = ?, due_date = ?, archived = ?
+                        assignee_id = ?, project_id = ?, due_date = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([
@@ -56,7 +79,6 @@ if ($action === 'add' || $action === 'edit') {
                     !empty($_POST['assignee_id']) ? (int)$_POST['assignee_id'] : null,
                     !empty($_POST['project_id']) ? (int)$_POST['project_id'] : null,
                     !empty($_POST['due_date']) ? $_POST['due_date'] : null,
-                    !empty($_POST['archived']) ? 1 : 0,
                     $task_id
                 ]);
                 $success_message = "mise à jour";
@@ -77,7 +99,6 @@ if ($action === 'add' || $action === 'edit') {
                 ]);
                 $success_message = "créée";
             }
-            // Stocker le message dans la session ou passer via GET
             header('Location: tasks.php?success=' . $success_message);
             exit;
         }
@@ -98,6 +119,8 @@ if ($action === 'add' || $action === 'edit') {
 }
 
 // Action: list (par défaut)
+$show_archived = $_GET['archived'] ?? 0;
+
 if (isset($_GET['success'])) {
     $action_message = $_GET['success'];
     if ($action_message === 'mise à jour') {
@@ -107,7 +130,7 @@ if (isset($_GET['success'])) {
     }
 }
 
-$stmt = $pdo->query("
+$stmt = $pdo->prepare("
     SELECT 
         t.id, t.title, t.description, t.category, t.status, t.progress_percent, 
         t.due_date, t.created_at,
@@ -116,9 +139,10 @@ $stmt = $pdo->query("
     FROM tasks t
     LEFT JOIN directory d ON t.assignee_id = d.id
     LEFT JOIN projects p ON t.project_id = p.id
-    WHERE t.archived = FALSE
+    WHERE t.archived = ?
     ORDER BY t.due_date ASC, t.created_at DESC
 ");
+$stmt->execute([$show_archived]);
 $tasks = $stmt->fetchAll();
 
 $loader = new \Twig\Loader\FilesystemLoader(__DIR__ . '/templates');
@@ -127,5 +151,7 @@ $twig = new \Twig\Environment($loader);
 echo $twig->render('tasks/list.html.twig', [
     'tasks' => $tasks,
     'success' => $success,
+    'show_archived' => $show_archived,
     'active_page' => 'tasks'
 ]);
+?>
