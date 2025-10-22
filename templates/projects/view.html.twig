@@ -90,13 +90,13 @@
                 <tbody id="logs-table">
                     {% for log in logs %}
                     <tr data-log-id="{{ log.id }}">
-                        <td class="py-2">{{ log.log_date|date('d/m/Y') }}</td>
-                        <td class="py-2" style="white-space: pre-line;">{{ log.content }}</td>
-                        <td class="text-center py-2">
+                       <td class="py-2 px-2">{{ log.log_date|date('d/m/Y') }}</td>
+                        <td class="py-2 w-100" style="white-space: pre-line;">{{ log.content }}</td>
+                        <td class="text-center py-2 text-nowrap">
                             <button class="btn btn-sm btn-outline-primary border-0 edit-log-btn" 
                                     data-log-id="{{ log.id }}"
                                     title="Modifier">
-                                <i class="fas fa-edit"></i>
+                               <i class="fas fa-edit"></i>
                             </button>
                             <button class="btn btn-sm btn-outline-danger border-0 delete-log-btn" 
                                     data-log-id="{{ log.id }}"

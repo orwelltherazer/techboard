@@ -59,17 +59,17 @@ if ($action === 'add' || $action === 'edit') {
             if ($action === 'edit') {
                 $stmt = $pdo->prepare("
                     UPDATE directory 
-                    SET name = ?, company = ?, contact_type = ?, phone = ?, email = ?, 
-                        address = ?, position = ?, expertise_area = ?, notes = ?
+                    SET name = ?,  firstname = ?, company = ?, contact_type = ?, phone = ?, email = ?, 
+                        position = ?, expertise_area = ?, notes = ?
                     WHERE id = ?
                 ");
                 $stmt->execute([
                     $name,
+                    $_POST['firstname'] ?? null,
                     $_POST['company'] ?? null,
                     $_POST['contact_type'] ?? 'internal_staff',
                     $_POST['phone'] ?? null,
                     $_POST['email'] ?? null,
-                    $_POST['address'] ?? null,
                     $_POST['position'] ?? null,
                     $_POST['expertise_area'] ?? null,
                     $_POST['notes'] ?? null,
@@ -78,16 +78,16 @@ if ($action === 'add' || $action === 'edit') {
                 $success_message = "mis à jour";
             } else {
                 $stmt = $pdo->prepare("
-                    INSERT INTO directory (name, company, contact_type, phone, email, address, position, expertise_area, notes)
+                    INSERT INTO directory (firstname, name, company, contact_type, phone, email, position, expertise_area, notes)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                 ");
                 $stmt->execute([
                     $name,
+                    $_POST['firstname'] ?? null,
                     $_POST['company'] ?? null,
                     $_POST['contact_type'] ?? 'internal_staff',
                     $_POST['phone'] ?? null,
                     $_POST['email'] ?? null,
-                    $_POST['address'] ?? null,
                     $_POST['position'] ?? null,
                     $_POST['expertise_area'] ?? null,
                     $_POST['notes'] ?? null

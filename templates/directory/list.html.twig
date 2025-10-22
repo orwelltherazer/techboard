@@ -70,11 +70,8 @@
                 data-company="{{ contact.company|lower|default('') }}">
                 <td>
                     <div>
-                        <strong>{{ contact.name }}</strong>
-                        {% if contact.company %}
-                            <div class="text-muted small mt-1">{{ contact.company }}</div>
-                        {% endif %}
-                    </div>
+                        <strong>{{ contact.name }}&nbsp;{{ contact.firstname }}</strong>
+                        </div>
                     <div class="contact-details mt-2 d-none">
                         <div class="row small">
                             <div class="col-md-3"><strong>Type:</strong>
@@ -86,7 +83,6 @@
                             </div>
                             <div class="col-md-3"><strong>Fonction:</strong> {{ contact.position|default('—') }}</div>
                             <div class="col-md-3"><strong>Domaine:</strong> {{ contact.expertise_area|default('—') }}</div>
-                            <div class="col-md-3"><strong>Adresse:</strong> {{ contact.address|default('—') }}</div>
                         </div>
                         {% if contact.notes %}
                         <div class="row small mt-1">

@@ -19,11 +19,14 @@
     <div class="card-body p-3">
         <form method="POST">
             <div class="row g-2">
-                <div class="col-md-6">
+                <div class="col-md-3">
                     <label for="name" class="form-label small fw-bold">Nom *</label>
                     <input type="text" class="form-control form-control-sm" id="name" name="name" value="{{ contact.name ?? '' }}" required>
                 </div>
-
+                <div class="col-md-3">
+                    <label for="firstname" class="form-label small fw-bold">Prénom *</label>
+                    <input type="text" class="form-control form-control-sm" id="firstname" name="firstname" value="{{ contact.firstname ?? '' }}" required>
+                </div>
                 <div class="col-md-6">
                     <label for="company" class="form-label small fw-bold">Société</label>
                     <input type="text" class="form-control form-control-sm" id="company" name="company" value="{{ contact.company ?? '' }}">
@@ -60,8 +63,6 @@
                 </div>
 
                 <div class="col-md-6">
-                    <label for="address" class="form-label small fw-bold">Adresse</label>
-                    <textarea class="form-control form-control-sm" id="address" name="address" rows="2">{{ contact.address ?? '' }}</textarea>
                 </div>
 
                 <div class="col-md-12">
