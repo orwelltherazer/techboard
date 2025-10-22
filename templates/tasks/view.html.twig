@@ -1,0 +1,312 @@
+{# templates/tasks/view.html.twig #}
+{% extends 'base.html.twig' %}
+
+{% block title %}TechBoard - {{ task.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>{{ task.title }}</h2>
+    <div>
+        <a href="tasks.php?action=edit&id={{ task.id }}" class="btn btn-outline-primary btn-sm">
+            <i class="fas fa-edit"></i> Modifier
+        </a>
+        <a href="tasks.php" class="btn btn-outline-secondary btn-sm">← Retour</a>
+    </div>
+</div>
+
+{# Informations de la tâche #}
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <div class="row g-3">
+            <div class="col-md-12">
+                <div class="fw-bold text-muted small mb-1">Description</div>
+                <p class="mb-0">{{ task.description ?: '—' }}</p>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="fw-bold text-muted small mb-1">Statut</div>
+                <span class="badge fw-bold
+                    {% if task.status == 'not_started' %}bg-secondary
+                    {% elseif task.status == 'in_progress' %}bg-warning text-dark
+                    {% else %}bg-success{% endif %}">
+                    {% if task.status == 'not_started' %}À faire
+                    {% elseif task.status == 'in_progress' %}En cours
+                    {% else %}Terminé{% endif %}
+                </span>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="fw-bold text-muted small mb-1">Avancement</div>
+                <div class="progress mb-2" style="height: 20px;">
+                    <div class="progress-bar
+                        {% if task.progress_percent < 30 %}bg-danger
+                        {% elseif task.progress_percent < 70 %}bg-warning
+                        {% else %}bg-success{% endif %}"
+                        role="progressbar"
+                        style="width: {{ task.progress_percent }}%">
+                        {{ task.progress_percent }}%
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="fw-bold text-muted small mb-1">Catégorie</div>
+                <p class="mb-0">
+                    {% if task.category == 'it' %}Informatique
+                    {% elseif task.category == 'maintenance' %}Maintenance
+                    {% elseif task.category == 'communication' %}Communication
+                    {% elseif task.category == 'security' %}Sécurité
+                    {% elseif task.category == 'network' %}Réseau
+                    {% else %}Autre{% endif %}
+                </p>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="fw-bold text-muted small mb-1">Échéance</div>
+                <p class="mb-0">
+                    {{ task.due_date ? task.due_date|date('d/m/Y') : '—' }}
+                    {% if task.due_date and task.due_date < 'now'|date('Y-m-d') and task.status != 'completed' %}
+                        <i class="fas fa-exclamation-circle text-danger ms-1" title="En retard"></i>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="fw-bold text-muted small mb-1">Assigné à</div>
+                <p class="mb-0">{{ task.assignee_name ?: 'Non assigné' }}
+                    {% if task.assignee_company %}
+                        <br><small class="text-muted">{{ task.assignee_company }}</small>
+                    {% endif %}
+                </p>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="fw-bold text-muted small mb-1">Projet associé</div>
+                <p class="mb-0">
+                    {% if task.project_id %}
+                        <a href="projects.php?action=view&id={{ task.project_id }}">{{ task.project_name }}</a>
+                    {% else %}
+                        Aucun projet
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Historique des étapes #}
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center py-2">
+        <h6 class="mb-0 fw-bold">Historique des étapes</h6>
+        <button type="button" class="btn btn-sm btn-primary" onclick="openAddModal()">
+            <i class="fas fa-plus"></i> Ajouter
+        </button>
+    </div>
+    <div class="card-body p-0">
+        {% if logs %}
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0 table-sm">
+                <tbody id="logs-table">
+                    {% for log in logs %}
+                    <tr data-log-id="{{ log.id }}">
+                        <td class="py-2">{{ log.log_date|date('d/m/Y H:i') }}</td>
+                        <td class="py-2" style="white-space: pre-line;">{{ log.content }}</td>
+                        <td class="text-center py-2">
+                            <button class="btn btn-sm btn-outline-primary border-0 edit-log-btn" 
+                                    data-log-id="{{ log.id }}"
+                                    title="Modifier">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger border-0 delete-log-btn" 
+                                    data-log-id="{{ log.id }}"
+                                    title="Supprimer">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-0 m-3">
+            Aucune étape enregistrée pour le moment.
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{# Modal Ajouter une étape #}
+<div class="modal fade" id="addLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ajouter une étape</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="addLogForm">
+                    <div class="mb-3">
+                        <label for="add_log_date" class="form-label fw-bold small">Date *</label>
+                        <input type="datetime-local" class="form-control" id="add_log_date" name="log_date" 
+                               value="{{ 'now'|date('Y-m-d\\TH:i') }}" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="add_log_content" class="form-label fw-bold small">Note *</label>
+                        <textarea class="form-control" id="add_log_content" name="content" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveAddLog">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{# Modal Modifier une étape #}
+<div class="modal fade" id="editLogModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Modifier l'étape</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="editLogForm">
+                    <input type="hidden" id="edit_log_id" name="log_id">
+                    <div class="mb-3">
+                        <label for="edit_log_date" class="form-label fw-bold small">Date *</label>
+                        <input type="datetime-local" class="form-control" id="edit_log_date" name="log_date" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_log_content" class="form-label fw-bold small">Note *</label>
+                        <textarea class="form-control" id="edit_log_content" name="content" rows="4" required></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-primary" id="saveEditLog">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-outline-primary.border-0,
+.btn-outline-danger.border-0 {
+    border: none !important;
+}
+</style>
+
+<script>
+const taskId = {{ task.id }};
+let addModal, editModal;
+
+// Initialiser les modals au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof bootstrap !== 'undefined') {
+        addModal = new bootstrap.Modal(document.getElementById('addLogModal'));
+        editModal = new bootstrap.Modal(document.getElementById('editLogModal'));
+    }
+});
+
+// Fonction pour ouvrir le modal d'ajout
+function openAddModal() {
+    // Réinitialiser le formulaire
+    document.getElementById('addLogForm').reset();
+    document.getElementById('add_log_date').value = '{{ 'now'|date('Y-m-d\\TH:i') }}';
+    document.getElementById('add_log_content').value = '';
+    
+    if (addModal) {
+        addModal.show();
+    } else if (typeof bootstrap !== 'undefined') {
+        addModal = new bootstrap.Modal(document.getElementById('addLogModal'));
+        addModal.show();
+    }
+}
+
+// Ajouter une étape
+document.getElementById('saveAddLog').addEventListener('click', function() {
+    const formData = new FormData(document.getElementById('addLogForm'));
+    
+    fetch(`tasks.php?action=add_log&id=${taskId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de l\'ajout');
+        }
+    });
+});
+
+// Modifier une étape - Charger les données
+document.querySelectorAll('.edit-log-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const logId = this.dataset.logId;
+        
+        fetch(`tasks.php?action=get_log&id=${taskId}&log_id=${logId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.id) {
+                document.getElementById('edit_log_id').value = data.id;
+                // Convertir datetime SQL en format datetime-local
+                const dateStr = data.log_date.replace(' ', 'T').slice(0, 16);
+                document.getElementById('edit_log_date').value = dateStr;
+                document.getElementById('edit_log_content').value = data.content;
+                
+                if (editModal) {
+                    editModal.show();
+                } else if (typeof bootstrap !== 'undefined') {
+                    editModal = new bootstrap.Modal(document.getElementById('editLogModal'));
+                    editModal.show();
+                }
+            }
+        });
+    });
+});
+
+// Modifier une étape - Sauvegarder
+document.getElementById('saveEditLog').addEventListener('click', function() {
+    const formData = new FormData(document.getElementById('editLogForm'));
+    
+    fetch(`tasks.php?action=edit_log&id=${taskId}`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            location.reload();
+        } else {
+            alert('Erreur lors de la modification');
+        }
+    });
+});
+
+// Supprimer une étape
+document.querySelectorAll('.delete-log-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        if (confirm('Êtes-vous sûr de vouloir supprimer cette étape ?')) {
+            const logId = this.dataset.logId;
+            
+            fetch(`tasks.php?action=delete_log&id=${taskId}&log_id=${logId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert('Erreur lors de la suppression');
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

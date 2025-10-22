@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$(cat <<''EOF''\nRefonte des modules et amélioration de l''interface\n\n- Création du module Contrats autonome avec timeline visuelle et gestion des échéances\n- Création du module Commandes autonome (extraction depuis Administration)\n- Système générique de pièces jointes pour tous les modules\n- Uniformisation de l''interface selon le modèle tasks.php\n\nNouveaux modules :\n- contracts.php : Gestion des contrats avec couleurs selon échéance et upload de pièces jointes\n- orders.php : Gestion des commandes avec statuts et liaison projets\n- Système d''upload générique (upload.php, download.php, delete_attachment.php)\n\nAméliorations interface :\n- Centralisation du CSS dans styles.css (plus de style inline dans les templates)\n- Boutons archiver/supprimer déplacés en bas à gauche des formulaires\n- Retrait des boutons d''action des listes (archiver/supprimer uniquement dans forms)\n- Liste projets simplifiée (retrait colonne Objectif et bouton Voir)\n- Aperçu des notes dans les listes de contrats\n\nUniformisation :\n- inventory.php et projects.php suivent maintenant le pattern tasks.php\n- Actions POST standardisées (archive, unarchive, delete)\n- Messages de succès cohérents\n\nNettoyage :\n- Suppression du module Administration (fonctionnalités réparties dans modules dédiés)\n- Suppression des anciens templates admin/\n- Retrait du champ annual_amount dans contracts\n\nMigrations SQL :\n- 003_create_attachments_table.sql : Table générique pour pièces jointes\n- 004_remove_annual_amount.sql : Nettoyage champ obsolète\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
+      "Bash(git push)"
     ],
     "deny": [],
     "ask": []

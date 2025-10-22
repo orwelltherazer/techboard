@@ -40,7 +40,7 @@
     <div class="col-md-3">
         <select class="form-select" id="filter-status">
             <option value="">Tous les statuts</option>
-            <option value="not_started">A faire</option>
+            <option value="not_started">À faire</option>
             <option value="in_progress">En cours</option>
             <option value="completed">Terminée</option>
         </select>
@@ -67,7 +67,9 @@
                 data-status="{{ task.status }}"
                 data-title="{{ task.title|lower }}"
                 data-project="{{ task.project_name|lower|default('') }}"
-                data-assignee="{{ task.assignee_name|lower|default('') }}">
+                data-assignee="{{ task.assignee_name|lower|default('') }}"
+                onclick="window.location='tasks.php?action=view&id={{ task.id }}'"
+                style="cursor: pointer;">
                 <td>
                     <div>
                         <strong>{{ task.title }}</strong>
@@ -75,29 +77,13 @@
                             <div class="text-muted small mt-1">{{ task.description|slice(0, 60) ~ (task.description|length > 60 ? '...' : '') }}</div>
                         {% endif %}
                     </div>
-                    <div class="task-details mt-2 d-none">
-                        <div class="row small">
-                            <div class="col-md-3"><strong>Projet :</strong> {{ task.project_name|default('—') }}</div>
-                            <div class="col-md-3"><strong>Assigné à :</strong> {{ task.assignee_name|default('Non assigné') }}</div>
-                            <div class="col-md-3">
-                                <strong>Catégorie:</strong> 
-                                {% if task.category == 'it' %}Informatique
-                                {% elseif task.category == 'maintenance' %}Maintenance
-                                {% elseif task.category == 'communication' %}Communication
-                                {% elseif task.category == 'security' %}Sécurité
-                                {% elseif task.category == 'network' %}Réseau
-                                {% else %}Autre{% endif %}
-                            </div>
-                            <div class="col-md-3"><strong>Créée le:</strong> {{ task.created_at|date('d/m/Y') }}</div>
-                        </div>
-                    </div>
                 </td>
                 <td>
                     <span class="badge fw-bold
                         {% if task.status == 'not_started' %}bg-secondary
                         {% elseif task.status == 'in_progress' %}bg-warning text-dark
                         {% else %}bg-success{% endif %}">
-                        {% if task.status == 'not_started' %}A faire
+                        {% if task.status == 'not_started' %}À faire
                         {% elseif task.status == 'in_progress' %}En cours
                         {% else %}Fini{% endif %}
                     </span>
@@ -124,7 +110,7 @@
                         —
                     {% endif %}
                 </td>
-                <td class="text-center align-middle">
+                <td class="text-center align-middle" onclick="event.stopPropagation();">
                     <a href="tasks.php?action=edit&id={{ task.id }}" class="btn btn-sm btn-outline-primary border-0">
                         <i class="fas fa-edit"></i>
                     </a>
@@ -203,19 +189,6 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function () {
-    // Toggle détails tâche au clic sur la ligne
-    document.querySelectorAll('.clickable-row').forEach(row => {
-        row.addEventListener('click', function (e) {
-            // Ne pas déplier si on clique sur un bouton
-            if (e.target.closest('.btn')) {
-                return;
-            }
-            
-            const details = this.querySelector('.task-details');
-            details.classList.toggle('d-none');
-        });
-    });
-
     // Filtrage
     const statusFilter = document.getElementById('filter-status');
     const searchInput = document.getElementById('search-tasks');
